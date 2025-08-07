@@ -1,36 +1,3 @@
 [
-  {
-    "from": "friendone",
-    "to": "admin123",
-    "enc_msg": "hello",
-    "time": 1754553154539
-  },
-  {
-    "id": "a2e9d2c6-e0be-4257-8ff7-6bf59eaee59e",
-    "from": "admin",
-    "to": "all",
-    "text": "hlo",
-    "timestamp": 1754562839810
-  },
-  {
-    "id": "794fd3fa-81e9-4313-ad60-1da1b0d64483",
-    "from": "agent1",
-    "to": "all",
-    "text": "how are you",
-    "timestamp": 1754562850811
-  },
-  {
-    "id": "1a21fc19-c884-4088-892a-4b0bac705a5f",
-    "from": "admin",
-    "to": "agent1",
-    "text": "hey",
-    "timestamp": 1754562864630
-  },
-  {
-    "id": "e1020d54-3e31-44f2-ab97-18dfc6dee0c2",
-    "from": "agent1",
-    "to": "all",
-    "text": "hey",
-    "timestamp": 1754567660938
-  }
+
 ]
