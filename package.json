@@ -1,0 +1,16 @@
+{
+  "name": "secure-chat-app",
+  "version": "1.0.0",
+  "description": "Polished Secure Chatroom with admin and user management",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "body-parser": "^1.20.2",
+    "express": "^4.21.2",
+    "nodemailer": "^6.9.4",
+    "uuid": "^9.0.1"
+  }
+}

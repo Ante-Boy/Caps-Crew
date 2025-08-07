@@ -1,0 +1,14 @@
+[
+  {
+    "id": "1",
+    "username": "admin",
+    "passwordHash": "$2b$10$Hfo6IyGxWAdpeGREN9R26OUMWYgqfoISTywt8.7X7HblO/4CzPIxq",
+    "role": "admin"
+  },
+  {
+    "id": "2",
+    "username": "agent1",
+    "passwordHash": "$2b$10$Hfo6IyGxWAdpeGREN9R26OUMWYgqfoISTywt8.7X7HblO/4CzPIxq",
+    "role": "agent"
+  }
+]
