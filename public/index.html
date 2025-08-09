@@ -1,26 +1,29 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Secure Chatroom - Welcome</title>
-<link rel="stylesheet" href="css/style.css" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RAW PROTOCOL - Encrypted Reality Grid</title>
+<link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-<header class="header">
-  <div class="container header-content">
-    <h1 class="logo">Secure Chatroom</h1>
+<canvas id="matrixCanvas"></canvas>
+<div class="chat-wrapper">
+  <div class="login-card">
+    <div class="crazy-logo" style="margin-bottom:18px;text-align:center;">
+      <span class="main">RAW PROTOCOL</span>
+      <div class="tagline">Encrypted <span>Reality</span> Grid</div>
+    </div>
+    <section>
+      <h3 style="color:#0f0;">Login</h3>
+      <input id="loginUser" placeholder="Username">
+      <input id="loginPass" type="password" placeholder="Password">
+      <button class="btn" onclick="login()">Login</button>
+      <div id="loginMsg"></div>
+    </section>
   </div>
-</header>
-
-<main class="container main-content">
-  <section class="hero">
-    <h2>Welcome! Please <a href="login.html">Login</a> to continue</h2>
-  </section>
-</main>
-
-<footer class="footer">
-  &copy; 2025 Secure Chatroom App
-</footer>
+</div>
+<script src="js/matrix.js"></script>
+<script src="js/login.js"></script>
 </body>
 </html>

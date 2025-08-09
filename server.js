@@ -1,226 +1,230 @@
 const express = require('express');
-const bcrypt = require('bcrypt');
+const http = require('http');
+const { Server } = require('socket.io');
 const fs = require('fs');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
+const bcrypt = require('bcryptjs');
+const cookieSession = require('cookie-session');
+const crypto = require('crypto');
+const multer = require('multer');
 
 const app = express();
-const PORT = 3000;
+const server = http.createServer(app);
+const io = new Server(server);
+const PORT = process.env.PORT || 3000;
 
+let groupChatName = "RAW PROTOCOL Main Room";
+let groupChatIcon = "default-group.png";
+
+app.use(cookieSession({
+  name: 'session',
+  keys: ['super-secret-key'],
+  maxAge: 24 * 60 * 60 * 1000
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/avatars', express.static(path.join(__dirname, 'public/avatars')));
+app.use('/group-icons', express.static(path.join(__dirname, 'public/group-icons')));
+const upload = multer({ dest: path.join(__dirname, 'public/avatars') });
+const groupUpload = multer({ dest: path.join(__dirname, 'public/group-icons') });
 
-const usersFilePath = path.join(__dirname, 'data', 'users.json');
-const messagesFilePath = path.join(__dirname, 'data', 'messages.json');
+if (!fs.existsSync('data')) fs.mkdirSync('data');
+if (!fs.existsSync('public/avatars')) fs.mkdirSync('public/avatars');
+if (!fs.existsSync('public/group-icons')) fs.mkdirSync('public/group-icons');
+const usersFile = 'data/users.json';
+const messagesFile = 'data/messages.json';
+if (!fs.existsSync(usersFile)) fs.writeFileSync(usersFile, '[]');
+if (!fs.existsSync(messagesFile)) fs.writeFileSync(messagesFile, '[]');
 
-function ensureDataFiles() {
-  const dataDir = path.join(__dirname, 'data');
-  if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
-  if (!fs.existsSync(usersFilePath)) fs.writeFileSync(usersFilePath, '[]', 'utf8');
-  if (!fs.existsSync(messagesFilePath)) fs.writeFileSync(messagesFilePath, '[]', 'utf8');
+const readUsers = () => JSON.parse(fs.readFileSync(usersFile));
+const writeUsers = (u) => fs.writeFileSync(usersFile, JSON.stringify(u, null, 2));
+const readMsgs = () => JSON.parse(fs.readFileSync(messagesFile));
+const writeMsgs = (m) => fs.writeFileSync(messagesFile, JSON.stringify(m, null, 2));
+
+const AES_KEY = "0123456789abcdef0123456789abcdef";
+const AES_IV  = "abcdef0123456789";
+function encrypt(t) {
+  const c = crypto.createCipheriv('aes-256-cbc', AES_KEY, AES_IV);
+  let enc = c.update(t, 'utf8', 'base64');
+  enc += c.final('base64');
+  return enc;
 }
-ensureDataFiles();
-
-function readUsers() {
+function decrypt(t) {
   try {
-    return JSON.parse(fs.readFileSync(usersFilePath, 'utf8'));
-  } catch (e) {
-    console.error('Error reading users:', e);
-    return [];
-  }
+    const d = crypto.createDecipheriv('aes-256-cbc', AES_KEY, AES_IV);
+    let dec = d.update(t, 'base64', 'utf8');
+    dec += d.final('utf8');
+    return dec;
+  } catch { return '[UNREADABLE]'; }
 }
-function writeUsers(users) {
-  try {
-    fs.writeFileSync(usersFilePath, JSON.stringify(users, null, 2));
-  } catch (e) {
-    console.error('Error writing users:', e);
-  }
-}
-function readMessages() {
-  try {
-    return JSON.parse(fs.readFileSync(messagesFilePath, 'utf8'));
-  } catch (e) {
-    console.error('Error reading messages:', e);
-    return [];
-  }
-}
-function writeMessages(messages) {
-  try {
-    fs.writeFileSync(messagesFilePath, JSON.stringify(messages, null, 2));
-  } catch (e) {
-    console.error('Error writing messages:', e);
-  }
+function adminOnly(req, res, next) {
+  if (req.session.role !== 'admin') return res.status(403).end();
+  next();
 }
 
-const allowedRoles = ['admin', 'agent'];
-const onlineUsers = new Map();
+// Group info
+app.get('/api/groupinfo', (req, res) => {
+  res.json({ groupName: groupChatName, groupIcon: `/group-icons/${groupChatIcon}` });
+});
+app.post('/api/groupinfo', adminOnly, groupUpload.single('icon'), (req, res) => {
+  if (req.body.name) groupChatName = req.body.name;
+  if (req.file) groupChatIcon = req.file.filename;
+  res.json({ message: 'Group info updated' });
+});
 
-function markUserOnline(username) {
-  onlineUsers.set(username, Date.now());
-}
-function updateUserActivity(username) {
-  if (onlineUsers.has(username)) {
-    onlineUsers.set(username, Date.now());
-  }
-}
-function getUsersWithOnlineStatus() {
+app.post('/api/register', adminOnly, async (req, res) => {
+  const { username, password, email, role } = req.body;
   const users = readUsers();
-  const now = Date.now();
-  return users.map(u => ({
-    id: u.id,
-    username: u.username,
-    role: u.role,
-    online: onlineUsers.has(u.username) && (now - onlineUsers.get(u.username) < 120000),
-  }));
-}
-
+  if (users.find(u => u.username === username)) return res.status(400).json({ error: 'Username exists' });
+  const hash = await bcrypt.hash(password, 10);
+  users.push({ username, passwordHash: hash, email, role: role || 'user', avatar: 'default.png' });
+  writeUsers(users);
+  res.json({ message: 'Registered' });
+});
 app.post('/api/login', async (req, res) => {
-  try {
-    const { username, password } = req.body;
-    if (!username || !password)
-      return res.status(400).json({ error: 'Username and password are required' });
-
-    const users = readUsers();
-    const user = users.find(u => u.username === username);
-    if (!user)
-      return res.status(400).json({ error: 'Invalid username or password' });
-
-    const validPassword = await bcrypt.compare(password, user.passwordHash);
-    if (!validPassword)
-      return res.status(400).json({ error: 'Invalid username or password' });
-
-    markUserOnline(user.username);
-    const { passwordHash, ...userSafe } = user;
-    res.json(userSafe);
-  } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
+  const { username, password } = req.body;
+  const user = readUsers().find(u => u.username === username);
+  if (!user) return res.status(400).json({ error: 'Invalid login' });
+  if (!(await bcrypt.compare(password, user.passwordHash))) return res.status(400).json({ error: 'Invalid login' });
+  req.session.username = username;
+  req.session.role = user.role;
+  res.json({ message: 'OK', role: user.role });
 });
-
-app.get('/api/users', (req, res) => {
-  try {
-    const users = getUsersWithOnlineStatus();
-    res.json(users);
-  } catch (error) {
-    console.error('Get users error:', error);
-    res.status(500).json({ error: 'Failed to read users' });
+app.post('/api/logout', (req,res)=>{
+  const username = req.session.username;
+  if (username) {
+    let messages = readMsgs();
+    messages = messages.filter(m => {
+      if (m.saved) return true;
+      if (m.from === username && !m.seen.includes(m.to)) return true;
+      if (m.to === username) return false;
+      return true;
+    });
+    writeMsgs(messages);
   }
+  req.session = null;
+  res.json({ok:true});
 });
+app.get('/api/session', (req, res) => {
+  const me = readUsers().find(u => u.username === req.session.username);
+  res.json({
+    username: req.session.username || null,
+    role: req.session.role || 'user',
+    email: me?.email || '',
+    avatar: me ? `/avatars/${me.avatar}` : '/avatars/default.png'
+  });
+});
+app.put('/api/users/me', upload.single('avatar'), (req, res) => {
+  if (!req.session.username) return res.status(401).json({ error: 'Not logged in' });
+  const users = readUsers();
+  const me = users.find(u => u.username === req.session.username);
+  if (!me) return res.status(404).json({ error: 'User not found' });
 
-app.post('/api/users', async (req, res) => {
-  try {
-    const { username, password, role } = req.body;
-    if (!username || !password || !role)
-      return res.status(400).json({ error: 'Missing username, password, or role' });
-
-    if (!allowedRoles.includes(role))
-      return res.status(400).json({ error: 'Invalid user role' });
-
-    const users = readUsers();
-    if (users.some(u => u.username === username))
+  if (req.body.username && req.body.username.trim() !== '' && req.body.username !== me.username) {
+    if (users.find(u => u.username === req.body.username)) {
       return res.status(400).json({ error: 'Username already exists' });
-
-    const passwordHash = await bcrypt.hash(password, 10);
-    const newUser = { id: uuidv4(), username, passwordHash, role };
-
-    users.push(newUser);
-    writeUsers(users);
-
-    const { passwordHash: _, ...userSafe } = newUser;
-    res.status(201).json(userSafe);
-  } catch (error) {
-    console.error('Add user error:', error);
-    res.status(500).json({ error: 'Failed to add user' });
+    }
+    me.username = req.body.username.trim();
+    req.session.username = me.username;
   }
+  if (req.body.email && req.body.email.trim() !== '') {
+    me.email = req.body.email.trim();
+  }
+  if (req.file) { me.avatar = req.file.filename; }
+  if (req.body.newpass && req.body.newpass.trim() !== '') {
+    if (req.session.role !== 'admin') {
+      if (!bcrypt.compareSync(req.body.oldpass || '', me.passwordHash)) {
+        return res.status(403).json({ error: 'Old password incorrect' });
+      }
+    }
+    me.passwordHash = bcrypt.hashSync(req.body.newpass, 10);
+  }
+  writeUsers(users);
+  res.json({ message: 'Profile updated successfully' });
 });
 
-app.put('/api/users/:id', async (req, res) => {
-  try {
-    const userId = req.params.id;
-    const { username, password, role } = req.body;
+// Admin user management
+app.get('/api/users', adminOnly, (req, res) => {
+  res.json(readUsers().map(({ passwordHash, ...u }) => u));
+});
+app.post('/api/users', adminOnly, async (req, res) => {
+  const { username, password, email, role } = req.body;
+  const users = readUsers();
+  if (users.find(u => u.username === username)) return res.status(400).json({ error: 'Username exists' });
+  const hash = await bcrypt.hash(password, 10);
+  users.push({ username, passwordHash: hash, email, role: role || 'user', avatar: 'default.png' });
+  writeUsers(users);
+  res.json({ message: 'User added' });
+});
+app.delete('/api/users/:username', adminOnly, (req, res) => {
+  writeUsers(readUsers().filter(u => u.username !== req.params.username));
+  res.json({ message: 'Deleted' });
+});
+app.put('/api/users/role/:username', adminOnly, (req, res) => {
+  const users = readUsers();
+  const user = users.find(u => u.username === req.params.username);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  user.role = req.body.role;
+  writeUsers(users);
+  res.json({ message: `${user.username} promoted to ${user.role}` });
+});
 
+// --- Socket.IO ---
+let onlineUsers = {};
+io.on('connection', socket => {
+  let username = null;
+  const emitOnlineList = () => {
     const users = readUsers();
-    const index = users.findIndex(u => u.id === userId);
-    if (index === -1) return res.status(404).json({ error: 'User not found' });
-
-    if (username) {
-      if (users.some((u, i) => u.username === username && i !== index))
-        return res.status(400).json({ error: 'Username already exists' });
-      users[index].username = username;
+    const list = Object.keys(onlineUsers).map(u => {
+      const data = users.find(x => x.username === u);
+      return { username: u, avatar: data ? `/avatars/${data.avatar}` : '/avatars/default.png' };
+    });
+    io.emit('online', { list, groupName: groupChatName, groupIcon: `/group-icons/${groupChatIcon}` });
+  };
+  socket.on('join', name => {
+    username = name;
+    onlineUsers[username] = socket.id;
+    const history = readMsgs()
+      .filter(m => (m.to === 'all' || m.to === username || m.from === username))
+      .map(m => ({ ...m, text: decrypt(m.text) }));
+    socket.emit('history', history);
+    emitOnlineList();
+  });
+  socket.on('send', data => {
+    const msg = { id: uuidv4(), from: username, to: data.to, text: encrypt(data.text), saved: false, seen: [] };
+    const arr = readMsgs();
+    arr.push(msg);
+    writeMsgs(arr);
+    if (data.to === 'all') io.emit('message', { ...msg, text: data.text });
+    else [username, data.to].forEach(u => {
+      if (onlineUsers[u]) io.to(onlineUsers[u]).emit('message', { ...msg, text: data.text });
+    });
+  });
+  socket.on('seen', id => {
+    const msgs = readMsgs();
+    const msg = msgs.find(m => m.id === id);
+    if (msg && !msg.seen.includes(username)) {
+      msg.seen.push(username);
+      writeMsgs(msgs);
+      io.emit('seenUpdate', { id, seen: msg.seen });
     }
-    if (role) {
-      if (!allowedRoles.includes(role))
-        return res.status(400).json({ error: 'Invalid user role' });
-      users[index].role = role;
-    }
-    if (password) {
-      users[index].passwordHash = await bcrypt.hash(password, 10);
-    }
-    writeUsers(users);
-    const { passwordHash, ...userSafe } = users[index];
-    res.json(userSafe);
-  } catch (error) {
-    console.error('Update user error:', error);
-    res.status(500).json({ error: 'Failed to update user' });
-  }
+  });
+  socket.on('save', id => {
+    const msgs = readMsgs();
+    const msg = msgs.find(m => m.id === id);
+    if (msg) { msg.saved = true; writeMsgs(msgs); io.emit('saveUpdate', { id }); }
+  });
+  socket.on('delete', id => {
+    writeMsgs(readMsgs().filter(m => m.id !== id));
+    io.emit('deleteUpdate', id);
+  });
+  socket.on('disconnect', () => {
+    if (onlineUsers[username]) delete onlineUsers[username];
+    emitOnlineList();
+  });
 });
 
-app.delete('/api/users/:id', (req, res) => {
-  try {
-    const userId = req.params.id;
-    let users = readUsers();
-    const index = users.findIndex(u => u.id === userId);
-    if (index === -1) return res.status(404).json({ error: 'User not found' });
-
-    users.splice(index, 1);
-    writeUsers(users);
-    res.json({ message: 'User deleted successfully' });
-  } catch (error) {
-    console.error('Delete user error:', error);
-    res.status(500).json({ error: 'Failed to delete user' });
-  }
-});
-
-app.get('/api/messages', (req, res) => {
-  try {
-    const username = req.query.username;
-    if (username) updateUserActivity(username);
-
-    const messages = readMessages();
-    res.json(messages);
-  } catch (error) {
-    console.error('Get messages error:', error);
-    res.status(500).json({ error: 'Failed to read messages' });
-  }
-});
-
-app.post('/api/messages', (req, res) => {
-  try {
-    const { from, to, text, timestamp } = req.body;
-    if (!from || !to || !text)
-      return res.status(400).json({ error: 'Missing from, to, or text fields' });
-
-    updateUserActivity(from);
-
-    const messages = readMessages();
-    const newMessage = {
-      id: uuidv4(),
-      from,
-      to,
-      text,
-      timestamp: typeof timestamp === 'number' ? timestamp : Date.now(),
-    };
-    messages.push(newMessage);
-    writeMessages(messages);
-    res.status(201).json(newMessage);
-  } catch (error) {
-    console.error('Post message error:', error);
-    res.status(500).json({ error: 'Failed to send message' });
-  }
-});
-
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
+server.listen(PORT, () => console.log(`RAW PROTOCOL running on http://localhost:${PORT}`));

@@ -1,27 +1,61 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Admin Panel</title>
-  <link rel="stylesheet" href="css/style.css" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RAW PROTOCOL - Admin Panel</title>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Mono:wght@400;700&family=Orbitron:wght@700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <header class="header">
-    <div class="container header-content">
-      <h1 class="logo">Admin Panel</h1>
-      <nav class="nav">
-        <a href="chat.html">Chatroom</a>
-        <a href="user-management.html">User Management</a>
-        <button id="logoutBtn" class="btn btn--secondary">Logout</button>
-      </nav>
+<canvas id="matrixCanvas"></canvas>
+<div class="chat-wrapper">
+  <div class="chat-glass">
+    <div class="chat-header">
+      <div class="crazy-logo">
+        <span class="main">RAW PROTOCOL</span>
+        <span class="glitch">// Encrypted Reality Grid</span>
+      </div>
+      <div>
+        <button class="btn btn-logout" onclick="logout()">Logout</button>
+        <button class="btn" onclick="location.href='/chat.html'">Back to Chat</button>
+      </div>
     </div>
-  </header>
-
-  <main class="container main-content">
-    <h2>Welcome Admin!</h2>
-    <p>Use navigation above.</p>
-  </main>
-
-  <script src="js/main.js"></script>
+    <div class="chat-body" style="flex-direction:column; padding:10px; overflow:auto;">
+      <div style="margin-bottom:20px;">
+        <h3 style="color:#0f0;">Group Chat Info</h3>
+        <img id="adminGroupIcon" src="/group-icons/default-group.png" style="width:50px;height:50px;border-radius:50%;object-fit:cover;margin-bottom:6px;">
+        <input id="groupNameInput" placeholder="Enter new group name" style="width:60%; padding:5px;display:block;margin-bottom:6px;">
+        <input type="file" id="groupIconInput" accept="image/*" style="margin-bottom:6px;">
+        <button class="btn" onclick="changeGroupInfo()">Save Group Info</button>
+        <div id="groupNameMsg" style="margin-top:5px;color:#0f0;"></div>
+      </div>
+      <div style="margin-bottom:20px;">
+        <h3 style="color:#0f0;">Users</h3>
+        <table id="userTable" style="width:100%;color:#0f0;border-collapse: collapse;">
+          <thead>
+            <tr>
+              <th>Username</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div>
+        <h3 style="color:#0f0;">Add New User</h3>
+        <input id="newUser" placeholder="Username">
+        <input id="newEmail" placeholder="Email">
+        <input id="newPass" placeholder="Password" type="password">
+        <select id="newRole"><option>user</option><option>admin</option></select>
+        <button class="btn" onclick="addUser()">Add</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="js/matrix.js"></script>
+<script src="js/admin.js"></script>
 </body>
 </html>

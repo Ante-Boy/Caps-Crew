@@ -1,35 +1,90 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Chatroom - Secure Chatroom</title>
-  <link rel="stylesheet" href="css/style.css" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RAW PROTOCOL Chat</title>
+<link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <header class="header">
-    <div class="container header-content" style="display: flex; align-items: center; justify-content: space-between;">
-      <h1 class="logo">Secure Chatroom</h1>
-      <button id="logoutBtn" class="btn btn--secondary">Logout</button>
+<canvas id="matrixCanvas"></canvas>
+
+<div class="chat-wrapper">
+  <div class="chat-glass">
+    <!-- Chat Header -->
+    <div class="chat-header">
+      <div class="crazy-logo">
+        <img id="groupIcon" src="/group-icons/default-group.png"
+             style="width:32px;height:32px;border-radius:50%;margin-right:8px;">
+        <span class="main" id="groupNameSpan">RAW PROTOCOL</span>
+        <span class="tagline">Encrypted <span>Reality</span> Grid</span>
+      </div>
+      <div class="chat-actions">
+        <button class="btn btn-admin" id="admin-panel-btn" style="display:none" onclick="openAdmin()">Admin</button>
+        <button class="btn" onclick="openSettings()">👤</button>
+        <button class="btn btn-logout" onclick="logout()">Logout</button>
+      </div>
     </div>
-  </header>
 
-  <main class="container chat-container" style="display: flex; gap: 1.5rem; height: 80vh; margin-top: 1rem;">
-    <aside class="online-users" style="flex-basis: 250px; background: #fff; border-radius: 6px; border: 1px solid #ddd; padding: 1rem; overflow-y: auto;">
-      <h4>Online Users</h4>
-      <div id="usersList" class="users-list" style="font-family: Arial, sans-serif;"></div>
-    </aside>
+    <!-- Chat Body -->
+    <div class="chat-body">
+      <!-- Sidebar -->
+      <aside class="user-sidebar" id="onlineUsers"></aside>
 
-    <section class="chat-main" style="flex-grow: 1; display: flex; flex-direction: column; background: #fff; border-radius: 6px; border: 1px solid #ddd; padding: 1rem;">
-      <div id="chat" class="messages-container" style="flex-grow: 1; overflow-y: auto; border-bottom: 1px solid #ddd; margin-bottom: 1rem; font-family: Arial, sans-serif;"></div>
-      <form id="messageForm" class="message-form" style="display: flex; gap: 0.5rem; align-items: center;">
-        <input id="msgInput" class="form-control" placeholder="Type your message…" autocomplete="off" required style="flex-grow: 1; padding: 0.5rem; font-size: 1rem; border-radius: 6px; border: 1px solid #ccc;" />
-        <select id="recipientSelect" class="form-control" style="width: 180px; padding: 0.5rem; font-size: 1rem; border-radius: 6px; border: 1px solid #ccc;"></select>
-        <button type="submit" class="btn btn--primary" style="padding: 0.5rem 1.2rem;">Send</button>
-      </form>
-    </section>
-  </main>
+      <!-- Chat Content -->
+      <div class="chat-content">
+        <div id="chat" class="message-container"></div>
+        <form id="chatForm" class="chat-input" autocomplete="off">
+          <input type="text" id="messageInput" placeholder="Type your message..." required>
+          <button type="submit" class="btn-send">➤</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
 
-  <script src="js/main.js"></script>
+<!-- Profile / Account Settings Modal -->
+<div id="user-settings-modal" class="settings-modal" style="display:none;">
+  <div class="settings-content">
+    <span class="close-btn" onclick="closeSettings()">&times;</span>
+    <h3>Account Settings</h3>
+
+    <div class="settings-section">
+      <label>Avatar:</label>
+      <img id="current-avatar" class="settings-avatar" src="/avatars/default.png">
+      <input type="file" id="new-avatar-file" accept="image/*">
+    </div>
+
+    <div class="settings-row">
+      <label>Username:</label>
+      <input id="settings-username">
+    </div>
+
+    <div class="settings-row">
+      <label>Email:</label>
+      <input id="settings-email">
+    </div>
+
+    <div class="settings-row">
+      <label>Old Password:</label>
+      <input type="password" id="settings-oldpass">
+    </div>
+
+    <div class="settings-row">
+      <label>New Password:</label>
+      <input type="password" id="settings-newpass">
+    </div>
+
+    <button class="btn" onclick="saveSettings();return false;">Save Changes</button>
+    <div id="settings-msg"></div>
+  </div>
+</div>
+
+<!-- Context Menu -->
+<div id="context-menu" class="context-menu"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="js/matrix.js"></script>
+<script src="js/main.js"></script>
 </body>
 </html>

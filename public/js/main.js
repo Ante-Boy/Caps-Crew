@@ -1,200 +1,103 @@
-(() => {
-  const el = id => document.getElementById(id);
-  let currentUser = null;
-  let messagePollInterval = null;
-  let userPollInterval = null;
+const socket = io();
+let myName = null, currentTarget = "all", allMessages = [], onlineUserList = [], onlineUserMap = {};
+let groupName = "RAW PROTOCOL", groupIcon = "/group-icons/default-group.png", myRole = "user";
 
-  async function apiRequest(path, method = 'GET', data = null) {
-    const options = { method, headers: { 'Content-Type': 'application/json' } };
-    if (data) options.body = JSON.stringify(data);
-    const response = await fetch(path, options);
-    if (!response.ok) {
-      let errMsg = response.statusText;
-      try {
-        const errData = await response.json();
-        errMsg = errData.error || errMsg;
-      } catch {}
-      throw new Error(errMsg);
-    }
-    return response.json();
-  }
+fetch('/api/session').then(r=>r.json()).then(({username, role})=>{
+  if(!username) return location.href='/';
+  myName = username; myRole = role;
+  if(role==='admin') document.getElementById('admin-panel-btn').style.display='';
+  socket.emit('join', myName);
+});
 
-  async function loadUsers() {
-    try {
-      const users = await apiRequest('/api/users');
-      const usersListEl = el('usersList');
-      const recipientSel = el('recipientSelect');
-      usersListEl.innerHTML = '';
-      recipientSel.innerHTML = '';
-
-      // Add group chat option
-      const allOption = document.createElement('option');
-      allOption.value = 'all';
-      allOption.textContent = 'All (Group Chat)';
-      recipientSel.appendChild(allOption);
-
-      users.forEach(user => {
-        if (user.username === currentUser.username) return;
-
-        const div = document.createElement('div');
-        div.className = 'user-item';
-        div.textContent = user.username + (user.online ? ' (Online)' : ' (Offline)');
-        usersListEl.appendChild(div);
-
-        const option = document.createElement('option');
-        option.value = user.username;
-        option.textContent = user.username + (user.online ? ' (Online)' : ' (Offline)');
-        recipientSel.appendChild(option);
-      });
-
-      recipientSel.value = 'all';
-    } catch (error) {
-      console.error('Load users failed:', error);
-      el('usersList').textContent = 'Failed to load users.';
-    }
-  }
-
-  async function loadMessages() {
-    try {
-      const msgs = await apiRequest(`/api/messages?username=${encodeURIComponent(currentUser.username)}`);
-
-      const chatEl = el('chat');
-      chatEl.innerHTML = '';
-
-      const filtered = msgs.filter(m =>
-        m.to === 'all' || m.to === currentUser.username || m.from === currentUser.username
-      );
-
-      filtered.forEach(msg => {
-        const isOwn = msg.from === currentUser.username;
-        const div = document.createElement('div');
-        div.className = 'message ' + (isOwn ? 'own' : 'other');
-
-        const sender = document.createElement('div');
-        sender.className = 'sender';
-        sender.textContent = msg.from + (msg.to === 'all' ? ' (Group)' : '');
-
-        const text = document.createElement('div');
-        text.className = 'text';
-        text.textContent = msg.text;
-
-        div.appendChild(sender);
-        div.appendChild(text);
-        chatEl.appendChild(div);
-      });
-
-      chatEl.scrollTop = chatEl.scrollHeight;
-    } catch (error) {
-      console.error('Load messages failed:', error);
-      el('chat').innerHTML = '<p>Failed to load messages.</p>';
-    }
-  }
-
-  async function sendMessage(ev) {
-    ev.preventDefault();
-    const textInput = el('msgInput');
-    const recipientSelect = el('recipientSelect');
-    const text = textInput.value.trim();
-    const to = recipientSelect.value;
-
-    if (!text) return;
-
-    try {
-      await apiRequest('/api/messages', 'POST', {
-        from: currentUser.username,
-        to,
-        text,
-        timestamp: Date.now()
-      });
-      textInput.value = '';
-      await loadMessages();
-    } catch (err) {
-      alert('Failed to send message: ' + err.message);
-    }
-  }
-
-  function logout() {
-    sessionStorage.removeItem('currentUser');
-    window.location.href = 'login.html';
-  }
-
-  // Chat page init
-  function initChatPage() {
-    const userStr = sessionStorage.getItem('currentUser');
-    if (!userStr) {
-      window.location.href = 'login.html';
-      return;
-    }
-    currentUser = JSON.parse(userStr);
-
-    el('logoutBtn').addEventListener('click', logout);
-    el('messageForm').addEventListener('submit', sendMessage);
-
-    loadUsers();
-    loadMessages();
-
-    userPollInterval = setInterval(loadUsers, 10000);   // refresh user list
-    messagePollInterval = setInterval(loadMessages, 3000); // refresh messages
-  }
-
-  // Login form submit handler
-  async function handleLogin(ev) {
-    ev.preventDefault();
-
-    const errorEl = el('errorMsg');
-    errorEl.style.display = 'none';
-
-    const username = el('username').value.trim();
-    const password = el('password').value.trim();
-
-    if (!username || !password) {
-      errorEl.textContent = 'Please enter username and password';
-      errorEl.style.display = 'block';
-      return;
-    }
-
-    try {
-      const user = await apiRequest('/api/login', 'POST', { username, password });
-      sessionStorage.setItem('currentUser', JSON.stringify(user));
-
-      if (user.role === 'admin') {
-        location.href = 'admin.html';
-      } else {
-        location.href = 'chat.html';
-      }
-    } catch (err) {
-      errorEl.textContent = err.message || 'Login failed';
-      errorEl.style.display = 'block';
-    }
-  }
-
-  // Admin page init
-  function initAdminPage() {
-    const userStr = sessionStorage.getItem('currentUser');
-    if (!userStr) {
-      window.location.href = 'login.html';
-      return;
-    }
-    const user = JSON.parse(userStr);
-    if (user.role !== 'admin') {
-      alert('Access denied.');
-      window.location.href = 'login.html';
-      return;
-    }
-
-    el('logoutBtn').addEventListener('click', logout);
-  }
-
-  // User Management page code (next answer for brevity and clarity)
-
-  document.addEventListener('DOMContentLoaded', () => {
-    const path = window.location.pathname;
-    if (path.endsWith('chat.html')) {
-      initChatPage();
-    } else if (path.endsWith('login.html')) {
-      el('loginForm').addEventListener('submit', handleLogin);
-    } else if (path.endsWith('admin.html')) {
-      initAdminPage();
-    }
+function logout(){ fetch('/api/logout',{method:'POST'}).then(()=>location.href='/'); }
+function openAdmin(){ location.href='/admin.html'; }
+function openSettings(){
+  fetch('/api/session').then(r=>r.json()).then(d=>{
+    document.getElementById('settings-username').value = d.username;
+    document.getElementById('settings-email').value = d.email;
+    document.getElementById('current-avatar').src = d.avatar;
+    document.getElementById('user-settings-modal').style.display = 'flex';
   });
-})();
+}
+function closeSettings(){ document.getElementById('user-settings-modal').style.display = 'none'; }
+async function saveSettings(){
+  const fd = new FormData();
+  fd.append('username', document.getElementById('settings-username').value);
+  fd.append('email', document.getElementById('settings-email').value);
+  fd.append('oldpass', document.getElementById('settings-oldpass').value);
+  fd.append('newpass', document.getElementById('settings-newpass').value);
+  const a = document.getElementById('new-avatar-file').files[0]; if(a) fd.append('avatar', a);
+  const res = await fetch('/api/users/me',{method:'PUT',body:fd});
+  const data = await res.json();
+  document.getElementById('settings-msg').textContent=data.message||data.error;
+  // Refresh avatar and username live
+  if(res.ok){
+    fetch('/api/session').then(r=>r.json()).then(sess=>{
+      document.getElementById('current-avatar').src = sess.avatar;
+      onlineUserMap[sess.username] = sess.avatar;
+      renderUserList();
+    });
+  }
+}
+
+const onlineUsersDiv=document.getElementById('onlineUsers'),chatDiv=document.getElementById('chat');
+function renderUserList(){
+  onlineUsersDiv.innerHTML='';
+  addUser({username:'all',avatar:groupIcon},groupName,true);
+  onlineUserList.forEach(u=>{ if(u.username!==myName) addUser(u,u.username,true); });
+}
+function addUser(userObj,label,on){
+  const d=document.createElement('div');d.className='user-item'+(currentTarget===userObj.username?' active':'');
+  const av=document.createElement('img');av.className='user-avatar';av.src=userObj.avatar;
+  const n=document.createElement('div');n.className='user-name';n.textContent=label;
+  const st=document.createElement('span');st.className='user-status '+(on?'status-online':'status-offline');
+  d.appendChild(av); d.appendChild(n); d.appendChild(st);
+  d.onclick=()=>{currentTarget=userObj.username; renderUserList(); renderMessages();};
+  onlineUsersDiv.appendChild(d);
+}
+function renderMessages(){
+  chatDiv.innerHTML='';
+  const msgs=currentTarget==='all'?allMessages.filter(m=>m.to==='all'):allMessages.filter(m=>(m.from===myName&&m.to===currentTarget)||(m.to===myName&&m.from===currentTarget));
+  msgs.forEach(m=>{
+    const wrap=document.createElement('div');wrap.style.display='flex';wrap.style.alignItems='flex-end';wrap.style.marginBottom='10px';
+    const isMe=m.from===myName;
+    const av=document.createElement('img'); av.src=onlineUserMap[m.from]||'/avatars/default.png'; av.className='bubble-avatar';
+    const bub=document.createElement('div'); bub.className='msg-bubble '+(isMe?'from-me':'from-them'); bub.textContent=m.text;
+    bub.oncontextmenu = function(e) {
+      e.preventDefault(); showContextMenu(e.pageX,e.pageY,m.id);
+    }
+    if(isMe){wrap.style.justifyContent='flex-end'; wrap.appendChild(bub); wrap.appendChild(av);} else {wrap.style.justifyContent='flex-start'; wrap.appendChild(av); wrap.appendChild(bub);}
+    chatDiv.appendChild(wrap);
+  });
+  chatDiv.scrollTop=chatDiv.scrollHeight;
+}
+function showContextMenu(x,y,id){
+  closeMenu();
+  const menu=document.getElementById('context-menu');
+  menu.style.left=x+'px'; menu.style.top=y+'px';
+  menu.innerHTML=`
+    <button onclick="socket.emit('save','${id}');closeMenu()">💾 Save</button>
+    <button onclick="socket.emit('delete','${id}');closeMenu()">🗑 Delete</button>
+    <button onclick="closeMenu()">Cancel</button>
+  `;
+  menu.style.display='block';
+}
+function closeMenu(){ document.getElementById('context-menu').style.display='none'; }
+
+socket.on('online', data=>{
+  onlineUserList=data.list;
+  groupName=data.groupName; groupIcon=data.groupIcon;
+  document.getElementById('groupIcon').src=groupIcon;
+  document.getElementById('groupNameSpan').textContent=groupName;
+  onlineUserMap={}; data.list.forEach(u=>{onlineUserMap[u.username]=u.avatar;});
+  renderUserList();
+});
+socket.on('history',msgs=>{allMessages=msgs; renderMessages();});
+socket.on('message',msg=>{allMessages.push(msg); renderMessages();});
+
+document.getElementById('chatForm').addEventListener('submit',e=>{
+  e.preventDefault();
+  const t=document.getElementById('messageInput').value.trim(); if(!t) return;
+  socket.emit('send',{to:currentTarget,text:t}); document.getElementById('messageInput').value='';
+});
+document.body.addEventListener('click',closeMenu);
