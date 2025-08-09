@@ -2,7 +2,7 @@
 node_modules/
 
 # Ignore local data files (keep private user data out of GitHub)
-data/users.json
+
 data/messages.json
 
 # Logs
