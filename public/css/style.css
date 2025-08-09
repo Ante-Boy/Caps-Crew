@@ -272,7 +272,7 @@ html, body {
   flex-shrink: 0;
 }
 
-/* --- Mobile Responsive Tweaks (general media queries) --- */
+/* --- Generic mobile responsive tweaks --- */
 @media (max-width: 700px) {
   .chat-glass {
     width: 100vw;
@@ -351,36 +351,47 @@ body.mobile-view .chat-glass {
   height: 100vh !important;
   border-radius: 0 !important;
 }
-
-body.mobile-view .user-sidebar {
-  display: none !important;
-}
-
 body.mobile-view .chat-content {
   width: 100% !important;
 }
-
 body.mobile-view .message-container {
   padding: 8px !important;
 }
-
 body.mobile-view .chat-input {
   position: fixed;
   bottom: 0;
   left: 0;
   width: 100vw;
-  background: white;
   border-top: 1px solid #ccc;
+  background: white;
   z-index: 2000;
 }
 
-body.mobile-view .chat-header {
-  flex-direction: column;
-  gap: 6px;
+/* --- Hamburger Menu Styling --- */
+.hamburger {
+  display: none;
+  font-size: 1.6rem;
+  background: transparent;
+  border: none;
+  color: #0f0;
+  cursor: pointer;
+  margin-right: 10px;
+}
+body.mobile-view .hamburger {
+  display: inline-block;
 }
 
-/* Smaller buttons on mobile */
-body.mobile-view .btn {
-  padding: 5px 8px;
-  font-size: 0.9rem;
+/* Mobile slide-in sidebar */
+body.mobile-view .user-sidebar {
+  position: fixed;
+  top: 0;
+  left: -260px;
+  width: 230px;
+  height: 100%;
+  background: rgba(0,0,0,0.9);
+  z-index: 3000;
+  transition: left 0.3s ease;
+}
+body.mobile-view .user-sidebar.open {
+  left: 0;
 }
