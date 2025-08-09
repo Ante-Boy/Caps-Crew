@@ -272,7 +272,7 @@ html, body {
   flex-shrink: 0;
 }
 
-/* --- Mobile Responsive Tweaks --- */
+/* --- Mobile Responsive Tweaks (general media queries) --- */
 @media (max-width: 700px) {
   .chat-glass {
     width: 100vw;
@@ -343,4 +343,44 @@ html, body {
     width: 99vw;
     padding: 8px 2vw;
   }
+}
+
+/* --- Force Mobile Layout When JS Detects Mobile --- */
+body.mobile-view .chat-glass {
+  width: 100vw !important;
+  height: 100vh !important;
+  border-radius: 0 !important;
+}
+
+body.mobile-view .user-sidebar {
+  display: none !important;
+}
+
+body.mobile-view .chat-content {
+  width: 100% !important;
+}
+
+body.mobile-view .message-container {
+  padding: 8px !important;
+}
+
+body.mobile-view .chat-input {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100vw;
+  background: white;
+  border-top: 1px solid #ccc;
+  z-index: 2000;
+}
+
+body.mobile-view .chat-header {
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Smaller buttons on mobile */
+body.mobile-view .btn {
+  padding: 5px 8px;
+  font-size: 0.9rem;
 }
