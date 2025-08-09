@@ -1,4 +1,4 @@
-// --- Mobile detection for layout ---
+// Detect if mobile device
 function isMobileDevice() {
   return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 }
@@ -6,12 +6,11 @@ if (isMobileDevice()) {
   document.body.classList.add('mobile-view');
 }
 
-// --- Socket.io setup ---
 const socket = io();
 let myName = null, currentTarget = "all", allMessages = [], onlineUserList = [], onlineUserMap = {};
 let groupName = "RAW PROTOCOL", groupIcon = "/group-icons/default-group.png", myRole = "user";
 
-// Fetch logged-in user session
+// Fetch session
 fetch('/api/session').then(r => r.json()).then(({ username, role }) => {
   if (!username) return location.href = '/';
   myName = username;
@@ -20,7 +19,7 @@ fetch('/api/session').then(r => r.json()).then(({ username, role }) => {
   socket.emit('join', myName);
 });
 
-// --- Navigation actions ---
+// Navigation
 function logout(){ fetch('/api/logout',{method:'POST'}).then(()=>location.href='/'); }
 function openAdmin(){ location.href='/admin.html'; }
 function openSettings(){
@@ -51,7 +50,7 @@ async function saveSettings(){
   }
 }
 
-// --- Sidebar rendering ---
+// Sidebar
 const onlineUsersDiv = document.getElementById('onlineUsers'), chatDiv = document.getElementById('chat');
 function renderUserList(){
   onlineUsersDiv.innerHTML='';
@@ -74,7 +73,7 @@ function addUser(userObj,label,on){
   onlineUsersDiv.appendChild(d);
 }
 
-// --- Chat message rendering ---
+// Messages
 function renderMessages(){
   chatDiv.innerHTML='';
   const msgs = currentTarget==='all'
@@ -100,7 +99,7 @@ function renderMessages(){
   chatDiv.scrollTop=chatDiv.scrollHeight;
 }
 
-// --- Context menu for chat actions ---
+// Context menu
 function showContextMenu(x,y,id){
   closeMenu();
   const menu=document.getElementById('context-menu');
@@ -114,7 +113,7 @@ function showContextMenu(x,y,id){
 }
 function closeMenu(){ document.getElementById('context-menu').style.display='none'; }
 
-// --- Socket events ---
+// Socket events
 socket.on('online', data=>{
   onlineUserList=data.list;
   groupName=data.groupName; groupIcon=data.groupIcon;
@@ -126,6 +125,7 @@ socket.on('online', data=>{
 socket.on('history',msgs=>{allMessages=msgs; renderMessages();});
 socket.on('message',msg=>{allMessages.push(msg); renderMessages();});
 
+// Form submit
 document.getElementById('chatForm').addEventListener('submit',e=>{
   e.preventDefault();
   const t=document.getElementById('messageInput').value.trim(); if(!t) return;
@@ -134,7 +134,7 @@ document.getElementById('chatForm').addEventListener('submit',e=>{
 });
 document.body.addEventListener('click',closeMenu);
 
-// --- Hamburger menu logic for mobile sidebar ---
+// Hamburger toggle
 const mobileMenuBtn = document.getElementById('mobileMenuBtn');
 const userSidebar = document.querySelector('.user-sidebar');
 if (mobileMenuBtn && userSidebar) {
@@ -151,4 +151,3 @@ if (mobileMenuBtn && userSidebar) {
     }
   });
 }
-
