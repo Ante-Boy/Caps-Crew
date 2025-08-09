@@ -73,7 +73,7 @@ function addUser(userObj,label,on){
   onlineUsersDiv.appendChild(d);
 }
 
-// Messages
+// Messages rendering
 function renderMessages(){
   chatDiv.innerHTML='';
   const msgs = currentTarget==='all'
@@ -134,7 +134,7 @@ document.getElementById('chatForm').addEventListener('submit',e=>{
 });
 document.body.addEventListener('click',closeMenu);
 
-// Hamburger toggle
+// Hamburger toggle for mobile sidebar
 const mobileMenuBtn = document.getElementById('mobileMenuBtn');
 const userSidebar = document.querySelector('.user-sidebar');
 if (mobileMenuBtn && userSidebar) {

@@ -8,12 +8,10 @@
 </head>
 <body>
 <canvas id="matrixCanvas"></canvas>
-
 <div class="chat-wrapper">
   <div class="chat-glass">
     <!-- Chat Header -->
     <div class="chat-header">
-      <!-- Mobile Hamburger Menu -->
       <button id="mobileMenuBtn" class="hamburger">&#9776;</button>
       <div class="crazy-logo">
         <img id="groupIcon" src="/group-icons/default-group.png"
@@ -27,13 +25,8 @@
         <button class="btn btn-logout" onclick="logout()">Logout</button>
       </div>
     </div>
-
-    <!-- Chat Body -->
     <div class="chat-body">
-      <!-- Sidebar -->
       <aside class="user-sidebar" id="onlineUsers"></aside>
-
-      <!-- Chat Content -->
       <div class="chat-content">
         <div id="chat" class="message-container"></div>
         <form id="chatForm" class="chat-input" autocomplete="off">
@@ -44,47 +37,36 @@
     </div>
   </div>
 </div>
-
-<!-- Profile / Account Settings Modal -->
 <div id="user-settings-modal" class="settings-modal" style="display:none;">
   <div class="settings-content">
     <span class="close-btn" onclick="closeSettings()">&times;</span>
     <h3>Account Settings</h3>
-
     <div class="settings-section">
       <label>Avatar:</label>
       <img id="current-avatar" class="settings-avatar" src="/avatars/default.png">
       <input type="file" id="new-avatar-file" accept="image/*">
     </div>
-
     <div class="settings-row">
       <label>Username:</label>
       <input id="settings-username">
     </div>
-
     <div class="settings-row">
       <label>Email:</label>
       <input id="settings-email">
     </div>
-
     <div class="settings-row">
       <label>Old Password:</label>
       <input type="password" id="settings-oldpass">
     </div>
-
     <div class="settings-row">
       <label>New Password:</label>
       <input type="password" id="settings-newpass">
     </div>
-
     <button class="btn" onclick="saveSettings();return false;">Save Changes</button>
     <div id="settings-msg"></div>
   </div>
 </div>
-
-<!-- Context Menu -->
 <div id="context-menu" class="context-menu"></div>
-
 <script src="/socket.io/socket.io.js"></script>
 <script src="js/matrix.js"></script>
 <script src="js/main.js"></script>
