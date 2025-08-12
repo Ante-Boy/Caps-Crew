@@ -1,6 +1,6 @@
 const bcrypt = require('bcrypt');
 
-const password = 'password123';
+const password = 'adminpass';
 
 bcrypt.hash(password, 10, (err, hash) => {
   if (err) throw err;

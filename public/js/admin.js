@@ -1,68 +1,71 @@
-function logout(){
-  fetch('/api/logout', { method: 'POST' }).then(() => location.href='/');
-}
-
-// Load group info
-async function loadGroupInfo() {
-  const res = await fetch('/api/groupinfo');
-  const data = await res.json();
-  document.getElementById('groupNameInput').value = data.groupName || '';
-  document.getElementById('adminGroupIcon').src = data.groupIcon;
-}
-async function changeGroupInfo() {
-  const formData = new FormData();
-  const nameVal = document.getElementById('groupNameInput').value.trim();
-  if (nameVal) formData.append('name', nameVal);
-  const file = document.getElementById('groupIconInput').files[0];
-  if (file) formData.append('icon', file);
-  const res = await fetch('/api/groupinfo', { method: 'POST', body: formData });
-  const data = await res.json();
-  document.getElementById('groupNameMsg').textContent = data.message;
-  loadGroupInfo();
-}
-
-async function loadUsers() {
-  const res = await fetch('/api/users');
-  const users = await res.json();
-  const tbody = document.querySelector('#userTable tbody');
+let usersCache = [];
+fetch('/api/users').then(res=>res.json()).then(users=>{
+  usersCache = users;
+  const tbody = document.getElementById('adminUsers');
   tbody.innerHTML = '';
-  users.forEach(u => {
-    let row = document.createElement('tr');
-    row.innerHTML = `
+  users.forEach(u=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
       <td>${u.username}</td>
-      <td>${u.email || ''}</td>
+      <td>${u.email}</td>
+      <td>${u.role}</td>
       <td>
-        <select onchange="promoteUser('${u.username}',this.value)">
-          <option value="user"${u.role==='user'?' selected':''}>user</option>
-          <option value="admin"${u.role==='admin'?' selected':''}>admin</option>
-        </select>
-      </td>
-      <td>
-        <button class="btn" onclick="deleteUser('${u.username}')">Delete</button>
+        <button class="btn btn-sm btn-warning me-1" onclick="openEditUser('${u.username}')">Edit</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteUser('${u.username}')">Delete</button>
       </td>
     `;
-    tbody.appendChild(row);
+    tbody.appendChild(tr);
   });
+});
+
+function openEditUser(username){
+  const user = usersCache.find(u => u.username===username);
+  if (!user) return;
+  document.getElementById('edit-originalUsername').value = user.username;
+  document.getElementById('edit-username').value = user.username;
+  document.getElementById('edit-email').value = user.email;
+  document.getElementById('edit-role').value = user.role;
+  new bootstrap.Modal(document.getElementById('editUserModal')).show();
 }
-async function promoteUser(username,newRole){
-  await fetch(`/api/users/role/${username}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({role:newRole}) });
-  loadUsers();
+
+document.getElementById('editUserForm').addEventListener('submit', e=>{
+  e.preventDefault();
+  const formData = new FormData(e.target);
+  fetch('/api/users', {method:'PUT', body:formData})
+    .then(res=>res.json().then(data=>({ok:res.ok,...data})))
+    .then(data=>{
+      alert(data.message || data.error);
+      if (data.ok) location.reload();
+    });
+});
+
+document.getElementById('createUserForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const formData = new FormData(e.target);
+  fetch('/api/users', { method: 'POST', body: formData })
+    .then(res => res.json().then(data=>({ok:res.ok,...data})))
+    .then(data => {
+      document.getElementById('createUserMsg').textContent = data.message || data.error;
+      if (data.ok) setTimeout(()=>location.reload(), 700);
+    });
+});
+
+function deleteUser(username){
+  if (!confirm(`Delete user ${username}?`)) return;
+  fetch(`/api/users/${username}`, { method: 'DELETE' })
+    .then(res => res.json())
+    .then(() => location.reload());
 }
-async function addUser() {
-  let username = document.getElementById('newUser').value;
-  let email = document.getElementById('newEmail').value;
-  let password = document.getElementById('newPass').value;
-  let role = document.getElementById('newRole').value;
-  await fetch('/api/users', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ username, email, password, role })
-  });
-  loadUsers();
-}
-async function deleteUser(username) {
-  await fetch('/api/users/' + username, { method: 'DELETE' });
-  loadUsers();
-}
-loadGroupInfo();
-loadUsers();
+
+document.getElementById('groupSettingsForm').addEventListener('submit', e=>{
+  e.preventDefault();
+  const fd = new FormData();
+  fd.append('name', document.getElementById('groupNameInput').value);
+  const icon = document.getElementById('groupIconFile').files[0];
+  if (icon) fd.append('icon', icon);
+  fetch('/api/groupinfo', {method:'POST', body:fd})
+    .then(res=>res.json().then(data=>({ok:res.ok,...data})))
+    .then(data=>{
+      document.getElementById('groupSettingsMsg').textContent = data.message || data.error;
+    });
+});

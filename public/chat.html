@@ -1,75 +1,248 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
- <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>RAW PROTOCOL Chat</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
   <link rel="stylesheet" href="css/style.css">
 </head>
-<body>
-<canvas id="matrixCanvas"></canvas>
-<div class="chat-wrapper">
-  <div class="chat-glass">
-    <!-- Chat Header -->
-    <div class="chat-header">
-      <button id="mobileMenuBtn" class="hamburger">&#9776;</button>
-      <div class="crazy-logo">
-        <img id="groupIcon" src="/group-icons/default-group.png"
-             style="width:32px;height:32px;border-radius:50%;margin-right:8px;">
-        <span class="main" id="groupNameSpan">RAW PROTOCOL</span>
-        <span class="tagline">Encrypted <span>Reality</span> Grid</span>
-      </div>
-      <div class="chat-actions">
-        <button class="btn btn-admin" id="admin-panel-btn" style="display:none" onclick="openAdmin()">Admin</button>
-        <button class="btn" onclick="openSettings()">👤</button>
-        <button class="btn btn-logout" onclick="logout()">Logout</button>
-      </div>
+<body class="bg-dark text-light">
+  <canvas id="matrixCanvas"></canvas>
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-dark glass-dark sticky-top px-3">
+    <button class="btn btn-outline-light d-md-none me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#userSidebar">☰ Users</button>
+    <span class="navbar-brand mb-0 h1 d-flex align-items-center">
+      <img id="groupIcon" src="/group-icons/default-group.png" class="rounded-circle me-2" style="width:32px;height:32px;">
+      <span id="groupNameSpan">RAW PROTOCOL</span>
+    </span>
+    <div class="ms-auto">
+      <button id="adminPanelBtn" class="btn btn-outline-light btn-sm me-1" style="display:none;">Admin</button>
+      <button class="btn btn-outline-light btn-sm me-1" onclick="openSettings()">👤</button>
+      <button class="btn btn-outline-danger btn-sm" onclick="logout()">Logout</button>
     </div>
-    <div class="chat-body">
-      <aside class="user-sidebar" id="onlineUsers"></aside>
-      <div class="chat-content">
-        <div id="chat" class="message-container"></div>
-        <form id="chatForm" class="chat-input" autocomplete="off">
-          <input type="text" id="messageInput" placeholder="Type your message..." required>
-          <button type="submit" class="btn-send">➤</button>
+  </nav>
+
+  <!-- Layout -->
+  <div class="container-fluid">
+    <div class="row vh-100">
+      <!-- Desktop Sidebar -->
+      <aside class="col-md-3 col-lg-2 d-none d-md-block glass-dark p-0">
+        <div id="onlineUsers" class="list-group list-group-flush"></div>
+      </aside>
+
+      <!-- Mobile Offcanvas Sidebar -->
+      <div class="offcanvas offcanvas-start glass-dark text-light" tabindex="-1" id="userSidebar">
+        <div class="offcanvas-header">
+          <h5 class="offcanvas-title">Users</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+        </div>
+        <div class="offcanvas-body p-0">
+          <div id="onlineUsersMobile" class="list-group list-group-flush"></div>
+        </div>
+      </div>
+
+      <!-- Chat Main -->
+      <main class="col-md-9 col-lg-10 d-flex flex-column glass p-0">
+        <div id="chat" class="flex-fill overflow-auto p-3 message-container"></div>
+        <form id="chatForm" class="d-flex border-top p-2 glass" autocomplete="off">
+          <input type="text" id="messageInput" class="form-control me-2" placeholder="Type your message..." required>
+          <button class="btn btn-success">Send</button>
         </form>
-      </div>
+      </main>
     </div>
   </div>
-</div>
-<div id="user-settings-modal" class="settings-modal" style="display:none;">
-  <div class="settings-content">
-    <span class="close-btn" onclick="closeSettings()">&times;</span>
-    <h3>Account Settings</h3>
-    <div class="settings-section">
-      <label>Avatar:</label>
-      <img id="current-avatar" class="settings-avatar" src="/avatars/default.png">
-      <input type="file" id="new-avatar-file" accept="image/*">
+
+  <!-- Settings Modal -->
+  <div class="modal fade" id="userSettingsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <form class="modal-content" onsubmit="saveSettings(); return false;">
+        <div class="modal-header">
+          <h5 class="modal-title">Account Settings</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3 text-center">
+            <img id="current-avatar" class="rounded-circle mb-2" src="/avatars/default.png" style="width:64px;height:64px;">
+            <input type="file" id="new-avatar-file" class="form-control form-control-sm" accept="image/*">
+          </div>
+          <input id="settings-username" class="form-control mb-2" placeholder="Username">
+          <input id="settings-email" class="form-control mb-2" placeholder="Email">
+          <input type="password" id="settings-oldpass" class="form-control mb-2" placeholder="Old Password">
+          <input type="password" id="settings-newpass" class="form-control mb-2" placeholder="New Password">
+          <div id="settings-msg" class="text-danger small"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-primary" type="submit">Save</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </form>
     </div>
-    <div class="settings-row">
-      <label>Username:</label>
-      <input id="settings-username">
-    </div>
-    <div class="settings-row">
-      <label>Email:</label>
-      <input id="settings-email">
-    </div>
-    <div class="settings-row">
-      <label>Old Password:</label>
-      <input type="password" id="settings-oldpass">
-    </div>
-    <div class="settings-row">
-      <label>New Password:</label>
-      <input type="password" id="settings-newpass">
-    </div>
-    <button class="btn" onclick="saveSettings();return false;">Save Changes</button>
-    <div id="settings-msg"></div>
   </div>
-</div>
-<div id="context-menu" class="context-menu"></div>
-<script src="/socket.io/socket.io.js"></script>
-<script src="js/matrix.js"></script>
-<script src="js/main.js"></script>
+
+  <!-- Context Menu -->
+  <div id="context-menu" class="context-menu"></div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="js/matrix.js"></script>
+  <script>
+    // === Main Chat Logic ===
+    function isMobileDevice() { return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent); }
+    if (isMobileDevice()) document.body.classList.add('mobile-view');
+
+    const socket = io();
+    let myName = null, currentTarget = "all", allMessages = [],
+        onlineUserList = [], onlineUserMap = {}, allRegisteredUsers = [];
+    let groupName = "RAW PROTOCOL", groupIcon = "/group-icons/default-group.png", myRole = "user";
+
+    (async () => {
+      const session = await (await fetch('/api/session')).json();
+      if (!session.username) return location.href='/';
+      myName = session.username; myRole = session.role;
+
+      if (myRole === 'admin') {
+        const adminBtn = document.getElementById('adminPanelBtn');
+        adminBtn.style.display = '';
+        adminBtn.onclick = () => { window.location.href = '/admin.html'; };
+      }
+
+      allRegisteredUsers = await (await fetch('/api/allusers')).json();
+      socket.emit('join', myName);
+      renderUserList();
+    })();
+
+    function logout(){ fetch('/api/logout',{method:'POST'}).then(()=>location.href='/'); }
+    function openSettings(){
+      fetch('/api/session').then(r=>r.json()).then(d=>{
+        document.getElementById('settings-username').value = d.username;
+        document.getElementById('settings-email').value = d.email;
+        document.getElementById('current-avatar').src = d.avatar;
+        new bootstrap.Modal(document.getElementById('userSettingsModal')).show();
+      });
+    }
+    async function saveSettings(){
+      const fd = new FormData();
+      fd.append('username', document.getElementById('settings-username').value);
+      fd.append('email', document.getElementById('settings-email').value);
+      fd.append('oldpass', document.getElementById('settings-oldpass').value);
+      fd.append('newpass', document.getElementById('settings-newpass').value);
+      const a = document.getElementById('new-avatar-file').files[0];
+      if (a) fd.append('avatar', a);
+      const res = await fetch('/api/users/me',{method:'PUT',body:fd});
+      const data = await res.json();
+      document.getElementById('settings-msg').textContent = data.message || data.error;
+      if (res.ok) {
+        fetch('/api/session').then(r=>r.json()).then(sess=>{
+          document.getElementById('current-avatar').src = sess.avatar;
+          onlineUserMap[sess.username] = sess.avatar;
+          renderUserList();
+        });
+      }
+    }
+
+    function renderUserList(){
+      const containers = [document.getElementById('onlineUsers'), document.getElementById('onlineUsersMobile')];
+      containers.forEach(c => c.innerHTML = '');
+      addUser({ username: 'all', avatar: groupIcon, role: null, online: true }, groupName, true);
+      allRegisteredUsers.forEach(u=>{
+        if (u.username !== myName) addUser(u, u.username, u.online);
+      });
+    }
+    function addUser(userObj, label, isOnline){
+      [document.getElementById('onlineUsers'), document.getElementById('onlineUsersMobile')].forEach(container=>{
+        const div = document.createElement('div');
+        div.className = 'list-group-item d-flex align-items-center';
+        if (currentTarget === userObj.username) div.classList.add('active');
+        const av = document.createElement('img');
+        av.className = 'rounded-circle me-2';
+        av.src = userObj.avatar || '/avatars/default.png';
+        av.style.width = '32px'; av.style.height = '32px';
+        const nameWrap = document.createElement('div');
+        nameWrap.textContent = label;
+        const statusWrap = document.createElement('span');
+        statusWrap.className = 'ms-auto';
+        const dot = document.createElement('span');
+        dot.className = `user-status-dot ${isOnline ? 'online' : 'offline'}`;
+        statusWrap.append(dot);
+        if (userObj.role === 'admin') {
+          const badge = document.createElement('span');
+          badge.className = 'badge bg-warning text-dark ms-2';
+          badge.textContent = 'Admin';
+          statusWrap.append(badge);
+        }
+        div.append(av, nameWrap, statusWrap);
+        div.onclick = ()=>{ currentTarget = userObj.username; renderUserList(); renderMessages(); };
+        container.appendChild(div);
+      });
+    }
+
+    function renderMessages(){
+      const chatDiv = document.getElementById('chat');
+      chatDiv.innerHTML = '';
+      const msgs = currentTarget === 'all'
+        ? allMessages.filter(m=>m.to==='all')
+        : allMessages.filter(m=>(m.from===myName && m.to===currentTarget) || (m.to===myName && m.from===currentTarget));
+      msgs.forEach(m=>{
+        const wrap = document.createElement('div');
+        wrap.style.display = 'flex';
+        wrap.style.alignItems = 'flex-end';
+        wrap.style.marginBottom = '10px';
+        const isMe = m.from === myName;
+        const av = document.createElement('img');
+        av.src = onlineUserMap[m.from] || '/avatars/default.png';
+        av.className = 'bubble-avatar';
+        const bub = document.createElement('div');
+        bub.className = 'msg-bubble ' + (isMe ? 'from-me' : 'from-them');
+        bub.textContent = m.text;
+        bub.oncontextmenu = e => { e.preventDefault(); showContextMenu(e.pageX, e.pageY, m.id); };
+        if (isMe) { wrap.style.justifyContent = 'flex-end'; wrap.append(bub, av); }
+        else { wrap.style.justifyContent = 'flex-start'; wrap.append(av, bub); }
+        chatDiv.appendChild(wrap);
+      });
+      chatDiv.scrollTop = chatDiv.scrollHeight;
+    }
+
+    function showContextMenu(x,y,id){
+      closeMenu();
+      const menu = document.getElementById('context-menu');
+      menu.style.left = x + 'px';
+      menu.style.top = y + 'px';
+      menu.innerHTML = `
+        <button onclick="socket.emit('save','${id}');closeMenu()">💾 Save</button>
+        <button onclick="socket.emit('delete','${id}');closeMenu()">🗑 Delete</button>
+        <button onclick="closeMenu()">Cancel</button>
+      `;
+      menu.style.display = 'block';
+    }
+    function closeMenu(){ document.getElementById('context-menu').style.display='none'; }
+
+    socket.on('online', data=>{
+      onlineUserList = data.list;
+      groupName = data.groupName; groupIcon = data.groupIcon;
+      document.getElementById('groupIcon').src = groupIcon;
+      document.getElementById('groupNameSpan').textContent = groupName;
+      onlineUserMap = {};
+      data.list.forEach(u=>{ onlineUserMap[u.username] = u.avatar; });
+      allRegisteredUsers = allRegisteredUsers.map(u => ({
+        ...u,
+        online: onlineUserList.some(ou => ou.username === u.username)
+      }));
+      renderUserList();
+    });
+    socket.on('history', msgs=>{ allMessages = msgs; renderMessages(); });
+    socket.on('message', msg=>{ allMessages.push(msg); renderMessages(); });
+
+    document.getElementById('chatForm').addEventListener('submit', e=>{
+      e.preventDefault();
+      const t = document.getElementById('messageInput').value.trim();
+      if (!t) return;
+      socket.emit('send', { to: currentTarget, text: t });
+      document.getElementById('messageInput').value = '';
+    });
+    document.body.addEventListener('click', closeMenu);
+  </script>
 </body>
 </html>

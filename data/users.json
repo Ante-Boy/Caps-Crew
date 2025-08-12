@@ -1,15 +1,16 @@
 [
   {
-    "id": "1",
     "username": "admin",
-    "passwordHash": "$2b$10$Hfo6IyGxWAdpeGREN9R26OUMWYgqfoISTywt8.7X7HblO/4CzPIxq",
+    "passwordHash": "$2b$10$SoztfTY7vHz1o/bYqVazmey.0uEWhszSeM/ZnFB45jlmwKyAYfaXO",
+    "email": "admin@example.com",
     "role": "admin",
-    "avatar": "2ead8331c251c4cb10099873d536abcb"
+    "avatar": "default.png"
   },
   {
-    "id": "2",
-    "username": "agent1",
-    "passwordHash": "$2b$10$Hfo6IyGxWAdpeGREN9R26OUMWYgqfoISTywt8.7X7HblO/4CzPIxq",
-    "role": "agent"
+    "username": "user01",
+    "passwordHash": "$2b$10$SoztfTY7vHz1o/bYqVazmey.0uEWhszSeM/ZnFB45jlmwKyAYfaXO",
+    "email": "user01@example.com",
+    "role": "user",
+    "avatar": "default.png"
   }
 ]
