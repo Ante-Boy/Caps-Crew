@@ -90,7 +90,7 @@ html, body {
 }
 .glass-card .form-label { color: #fff; }
 
-/* ==== NEW GLASS EFFECTS (CLEARER) ==== */
+/* GLASS EFFECTS */
 .glass {
   background: rgba(255,255,255,0.08);
   backdrop-filter: blur(18px) saturate(180%);
@@ -137,7 +137,9 @@ html, body {
   max-width: 74%;
   word-break: break-word;
   border: 1.4px solid rgba(37,250,188,0.2);
+  animation: fadeIn 0.25s ease-out;
 }
+
 .from-me {
   align-self: flex-end;
   background: rgba(0,255,128,0.4);
@@ -150,12 +152,28 @@ html, body {
   border-left: 3px solid rgba(18,235,200,0.6);
   color: #fff;
 }
+
 .bubble-avatar {
   width: 32px; height: 32px;
   border-radius: 50%;
   margin: 0 6px;
   object-fit: cover;
   box-shadow: 0 0 9px rgba(19,251,224,0.6);
+}
+
+/* Fade-in animation */
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Fade-out animation for disappearing messages */
+.fade-out {
+  animation: fadeOut 0.35s ease forwards;
+}
+@keyframes fadeOut {
+  from { opacity: 1; transform: scale(1); height: auto; }
+  to { opacity: 0; transform: scale(0.85); height: 0; margin: 0; padding: 0; }
 }
 
 /* INPUT AREA */
@@ -177,8 +195,6 @@ html, body {
   height: 10px;
   border-radius: 50%;
   margin-left: 6px;
-  margin-right: 0;
-  background: #aaa;
 }
 .user-status-dot.online { background: #19ff7a; }
 .user-status-dot.offline { background: #999; opacity: 0.7; }
@@ -286,4 +302,15 @@ html, body {
     max-width: 95%;
     margin: auto;
   }
+}
+
+/* DM Header Online/Offline Indicator */
+#groupNameSpan {
+  font-weight: bold;
+}
+.online {
+  color: #19ff7a;
+}
+.offline {
+  color: #999;
 }

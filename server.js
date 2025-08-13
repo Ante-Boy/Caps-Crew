@@ -14,11 +14,9 @@ const server = http.createServer(app);
 const io = new Server(server);
 const PORT = process.env.PORT || 3000;
 
-// Group chat defaults
 let groupChatName = "RAW PROTOCOL Main Room";
 let groupChatIcon = "default-group.png";
 
-// Middleware
 app.use(cookieSession({
   name: 'session',
   keys: ['super-secret-key'],
@@ -30,7 +28,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/avatars', express.static(path.join(__dirname, 'public/avatars')));
 app.use('/group-icons', express.static(path.join(__dirname, 'public/group-icons')));
 
-// Ensure folders exist
 if (!fs.existsSync('data')) fs.mkdirSync('data');
 if (!fs.existsSync('public/avatars')) fs.mkdirSync('public/avatars');
 if (!fs.existsSync('public/group-icons')) fs.mkdirSync('public/group-icons');
@@ -48,7 +45,6 @@ const writeUsers = u => fs.writeFileSync(usersFile, JSON.stringify(u, null, 2));
 const readMsgs = () => JSON.parse(fs.readFileSync(messagesFile));
 const writeMsgs = m => fs.writeFileSync(messagesFile, JSON.stringify(m, null, 2));
 
-// Encryption utils
 const AES_KEY = "0123456789abcdef0123456789abcdef";
 const AES_IV  = "abcdef0123456789";
 const encrypt = text => {
@@ -67,33 +63,21 @@ const adminOnly = (req, res, next) => {
   next();
 };
 
-// -------- ROUTES --------
-
-// Home page
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-// Login page
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 app.get('/login', (req, res) => {
   if (req.session.username) return res.redirect('/chat.html');
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
-
-// Chat protected
 app.get('/chat.html', (req, res) => {
   if (!req.session.username) return res.redirect('/login');
   res.sendFile(path.join(__dirname, 'public', 'chat.html'));
 });
-
-// Admin protected
 app.get('/admin.html', (req, res) => {
   if (!req.session.username) return res.redirect('/login');
   if (req.session.role !== 'admin') return res.status(403).send('Forbidden');
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
-// Login API
 app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
   const user = readUsers().find(u => u.username === username);
@@ -105,13 +89,8 @@ app.post('/api/login', async (req, res) => {
   res.json({ message: 'OK', role: user.role });
 });
 
-// Logout API
-app.post('/api/logout', (req, res) => {
-  req.session = null;
-  res.json({ ok: true });
-});
+app.post('/api/logout', (req, res) => { req.session = null; res.json({ ok: true }); });
 
-// Session API
 app.get('/api/session', (req, res) => {
   const me = readUsers().find(u => u.username === req.session.username);
   res.json({
@@ -122,12 +101,9 @@ app.get('/api/session', (req, res) => {
   });
 });
 
-// Admin: Get users
 app.get('/api/users', adminOnly, (req, res) => {
   res.json(readUsers().map(({ passwordHash, ...u }) => u));
 });
-
-// --- New Route: Get all users for sidebar (online + offline) ---
 app.get('/api/allusers', (req, res) => {
   const users = readUsers();
   const online = Object.keys(onlineUsers);
@@ -140,21 +116,12 @@ app.get('/api/allusers', (req, res) => {
   })));
 });
 
-// Admin: Add user
-app.post('/api/users', adminOnly, async (req, res) => {
-  const { username, password, email, role } = req.body;
-  const users = readUsers();
-  if (users.find(u => u.username === username)) return res.status(400).json({ error: 'Username exists' });
-  const hash = await bcrypt.hash(password, 10);
-  users.push({ username, passwordHash: hash, email, role: role || 'user', avatar: 'default.png' });
-  writeUsers(users);
-  res.json({ message: 'User added' });
-});
-
-// ------- SOCKET.IO -------
+// SOCKET.IO
 let onlineUsers = {};
+
 io.on('connection', socket => {
   let username = null;
+  let userRole = 'user';
 
   const emitOnlineList = () => {
     const users = readUsers();
@@ -167,8 +134,9 @@ io.on('connection', socket => {
 
   socket.on('join', name => {
     username = name;
+    const me = readUsers().find(u => u.username === username);
+    if (me) userRole = me.role;
     onlineUsers[username] = socket.id;
-
     const history = readMsgs()
       .filter(m => m.to === 'all' || m.to === username || m.from === username)
       .map(m => ({ ...m, text: decrypt(m.text) }));
@@ -176,8 +144,16 @@ io.on('connection', socket => {
     emitOnlineList();
   });
 
+  // Send
   socket.on('send', data => {
-    const msg = { id: uuidv4(), from: username, to: data.to, text: encrypt(data.text), saved: false, seen: [] };
+    const msg = { 
+      id: uuidv4(), 
+      from: username, 
+      to: data.to, 
+      text: encrypt(data.text), 
+      saved: false, 
+      seen: [username] 
+    };
     const arr = readMsgs();
     arr.push(msg);
     writeMsgs(arr);
@@ -185,14 +161,64 @@ io.on('connection', socket => {
     if (data.to === 'all') {
       io.emit('message', { ...msg, text: data.text });
     } else {
-      [username, data.to].forEach(u => {
-        if (onlineUsers[u]) io.to(onlineUsers[u]).emit('message', { ...msg, text: data.text });
-      });
+      if (onlineUsers[username]) io.to(onlineUsers[username]).emit('message', { ...msg, text: data.text });
+      if (onlineUsers[data.to]) io.to(onlineUsers[data.to]).emit('message', { ...msg, text: data.text });
     }
   });
 
+  // Seen tracking: mark as seen, don't delete yet
+  socket.on('seen', msgId => {
+    const msgs = readMsgs();
+    const msg = msgs.find(m => m.id === msgId);
+    if (msg && !msg.seen.includes(username)) {
+      msg.seen.push(username);
+      writeMsgs(msgs);
+    }
+  });
+
+  // Delete for everyone (sender or admin)
+  socket.on('delete', msgId => {
+    const msgs = readMsgs();
+    const idx = msgs.findIndex(m => m.id === msgId);
+    if (idx >= 0) {
+      const msg = msgs[idx];
+      const isSender = msg.from === username;
+      const isAdmin = userRole === 'admin';
+      if (isSender || isAdmin) {
+        msgs.splice(idx, 1);
+        writeMsgs(msgs);
+        io.emit('deleteMessage', msgId);
+      }
+    }
+  });
+
+  // On disconnect: remove sender's seen-by-all messages
   socket.on('disconnect', () => {
     if (onlineUsers[username]) delete onlineUsers[username];
+
+    if (username) {
+      let msgs = readMsgs();
+      const users = readUsers().map(u => u.username);
+
+      msgs = msgs.filter(m => {
+        if (m.from === username) {
+          // Group: seen by everyone
+          if (m.to === 'all' && m.seen.length >= users.length) {
+            io.emit('deleteMessage', m.id);
+            return false; // remove from storage
+          }
+          // DM: seen by both
+          if (m.to !== 'all' && m.seen.includes(m.from) && m.seen.includes(m.to)) {
+            io.emit('deleteMessage', m.id);
+            return false;
+          }
+        }
+        return true;
+      });
+
+      writeMsgs(msgs);
+    }
+
     emitOnlineList();
   });
 });
