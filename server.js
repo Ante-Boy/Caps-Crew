@@ -14,9 +14,11 @@ const server = http.createServer(app);
 const io = new Server(server);
 const PORT = process.env.PORT || 3000;
 
+// Group chat
 let groupChatName = "RAW PROTOCOL Main Room";
 let groupChatIcon = "default-group.png";
 
+// Middleware
 app.use(cookieSession({
   name: 'session',
   keys: ['super-secret-key'],
@@ -27,14 +29,20 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/avatars', express.static(path.join(__dirname, 'public/avatars')));
 app.use('/group-icons', express.static(path.join(__dirname, 'public/group-icons')));
+app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
+// Ensure directories exist
 if (!fs.existsSync('data')) fs.mkdirSync('data');
 if (!fs.existsSync('public/avatars')) fs.mkdirSync('public/avatars');
 if (!fs.existsSync('public/group-icons')) fs.mkdirSync('public/group-icons');
+if (!fs.existsSync('public/uploads')) fs.mkdirSync('public/uploads');
 
+// Multer setup
 const upload = multer({ dest: path.join(__dirname, 'public/avatars') });
 const groupUpload = multer({ dest: path.join(__dirname, 'public/group-icons') });
+const fileUpload = multer({ dest: path.join(__dirname, 'public/uploads') });
 
+// Data store
 const usersFile = 'data/users.json';
 const messagesFile = 'data/messages.json';
 if (!fs.existsSync(usersFile)) fs.writeFileSync(usersFile, '[]');
@@ -45,24 +53,27 @@ const writeUsers = u => fs.writeFileSync(usersFile, JSON.stringify(u, null, 2));
 const readMsgs = () => JSON.parse(fs.readFileSync(messagesFile));
 const writeMsgs = m => fs.writeFileSync(messagesFile, JSON.stringify(m, null, 2));
 
+// Encryption (Step 7: Random IV)
 const AES_KEY = "0123456789abcdef0123456789abcdef";
-const AES_IV  = "abcdef0123456789";
 const encrypt = text => {
-  const cipher = crypto.createCipheriv('aes-256-cbc', AES_KEY, AES_IV);
-  return cipher.update(text, 'utf8', 'base64') + cipher.final('base64');
+  const iv = crypto.randomBytes(16);
+  const cipher = crypto.createCipheriv('aes-256-cbc', AES_KEY, iv);
+  const encrypted = Buffer.concat([cipher.update(text, 'utf8'), cipher.final()]);
+  return iv.toString('hex') + ':' + encrypted.toString('base64');
 };
-const decrypt = text => {
+const decrypt = enc => {
   try {
-    const decipher = crypto.createDecipheriv('aes-256-cbc', AES_KEY, AES_IV);
-    return decipher.update(text, 'base64', 'utf8') + decipher.final('utf8');
-  } catch { return '[UNREADABLE]'; }
+    const [ivHex, data] = enc.split(':');
+    const iv = Buffer.from(ivHex, 'hex');
+    const decipher = crypto.createDecipheriv('aes-256-cbc', AES_KEY, iv);
+    const decrypted = Buffer.concat([decipher.update(Buffer.from(data, 'base64')), decipher.final()]);
+    return decrypted.toString('utf8');
+  } catch {
+    return '[UNREADABLE]';
+  }
 };
 
-const adminOnly = (req, res, next) => {
-  if (req.session.role !== 'admin') return res.status(403).json({ error: 'Forbidden' });
-  next();
-};
-
+// ------- API Routes --------
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 app.get('/login', (req, res) => {
   if (req.session.username) return res.redirect('/chat.html');
@@ -78,6 +89,7 @@ app.get('/admin.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
+// Auth endpoints
 app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
   const user = readUsers().find(u => u.username === username);
@@ -88,9 +100,7 @@ app.post('/api/login', async (req, res) => {
   req.session.role = user.role;
   res.json({ message: 'OK', role: user.role });
 });
-
 app.post('/api/logout', (req, res) => { req.session = null; res.json({ ok: true }); });
-
 app.get('/api/session', (req, res) => {
   const me = readUsers().find(u => u.username === req.session.username);
   res.json({
@@ -99,10 +109,6 @@ app.get('/api/session', (req, res) => {
     email: me?.email || '',
     avatar: me ? `/avatars/${me.avatar}` : '/avatars/default.png'
   });
-});
-
-app.get('/api/users', adminOnly, (req, res) => {
-  res.json(readUsers().map(({ passwordHash, ...u }) => u));
 });
 app.get('/api/allusers', (req, res) => {
   const users = readUsers();
@@ -116,9 +122,18 @@ app.get('/api/allusers', (req, res) => {
   })));
 });
 
-// SOCKET.IO
-let onlineUsers = {};
+// File upload API (Step 4 refinement: return originalName)
+app.post('/api/upload', fileUpload.single('file'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No file' });
+  const filePath = `/uploads/${req.file.filename}`;
+  res.json({
+    filePath,
+    filename: req.file.originalname || req.file.filename
+  });
+});
 
+// --------- Socket.IO Chat --------
+let onlineUsers = {};
 io.on('connection', socket => {
   let username = null;
   let userRole = 'user';
@@ -137,36 +152,61 @@ io.on('connection', socket => {
     const me = readUsers().find(u => u.username === username);
     if (me) userRole = me.role;
     onlineUsers[username] = socket.id;
+
+    // load chat history
     const history = readMsgs()
       .filter(m => m.to === 'all' || m.to === username || m.from === username)
-      .map(m => ({ ...m, text: decrypt(m.text) }));
+      .map(m => {
+        if (m.type === 'file') return { ...m };
+        return { ...m, text: decrypt(m.text) };
+      });
     socket.emit('history', history);
     emitOnlineList();
   });
 
-  // Send
+  // Text message
   socket.on('send', data => {
-    const msg = { 
-      id: uuidv4(), 
-      from: username, 
-      to: data.to, 
-      text: encrypt(data.text), 
-      saved: false, 
-      seen: [username] 
+    const msg = {
+      id: uuidv4(),
+      from: username,
+      to: data.to,
+      text: encrypt(data.text),
+      type: 'text',
+      seen: [username]
     };
     const arr = readMsgs();
     arr.push(msg);
     writeMsgs(arr);
-
-    if (data.to === 'all') {
-      io.emit('message', { ...msg, text: data.text });
-    } else {
-      if (onlineUsers[username]) io.to(onlineUsers[username]).emit('message', { ...msg, text: data.text });
-      if (onlineUsers[data.to]) io.to(onlineUsers[data.to]).emit('message', { ...msg, text: data.text });
+    const toSend = { ...msg, text: data.text };
+    if (data.to === 'all') io.emit('message', toSend);
+    else {
+      if (onlineUsers[username]) io.to(onlineUsers[username]).emit('message', toSend);
+      if (onlineUsers[data.to]) io.to(onlineUsers[data.to]).emit('message', toSend);
     }
   });
 
-  // Seen tracking: mark as seen, don't delete yet
+  // File message - always store originalName
+  socket.on('fileMessage', data => {
+    const msg = {
+      id: uuidv4(),
+      from: username,
+      to: data.to,
+      text: data.filePath,
+      originalName: data.filename || "file.bin",
+      type: 'file',
+      seen: [username]
+    };
+    const arr = readMsgs();
+    arr.push(msg);
+    writeMsgs(arr);
+    if (data.to === 'all') io.emit('message', msg);
+    else {
+      if (onlineUsers[username]) io.to(onlineUsers[username]).emit('message', msg);
+      if (onlineUsers[data.to]) io.to(onlineUsers[data.to]).emit('message', msg);
+    }
+  });
+
+  // Seen event
   socket.on('seen', msgId => {
     const msgs = readMsgs();
     const msg = msgs.find(m => m.id === msgId);
@@ -176,7 +216,7 @@ io.on('connection', socket => {
     }
   });
 
-  // Delete for everyone (sender or admin)
+  // Delete event (sender/admin)
   socket.on('delete', msgId => {
     const msgs = readMsgs();
     const idx = msgs.findIndex(m => m.id === msgId);
@@ -192,22 +232,18 @@ io.on('connection', socket => {
     }
   });
 
-  // On disconnect: remove sender's seen-by-all messages
+  // Disconnect cleanup (auto delete seen messages)
   socket.on('disconnect', () => {
     if (onlineUsers[username]) delete onlineUsers[username];
-
     if (username) {
       let msgs = readMsgs();
       const users = readUsers().map(u => u.username);
-
       msgs = msgs.filter(m => {
         if (m.from === username) {
-          // Group: seen by everyone
           if (m.to === 'all' && m.seen.length >= users.length) {
             io.emit('deleteMessage', m.id);
-            return false; // remove from storage
+            return false;
           }
-          // DM: seen by both
           if (m.to !== 'all' && m.seen.includes(m.from) && m.seen.includes(m.to)) {
             io.emit('deleteMessage', m.id);
             return false;
@@ -215,10 +251,8 @@ io.on('connection', socket => {
         }
         return true;
       });
-
       writeMsgs(msgs);
     }
-
     emitOnlineList();
   });
 });

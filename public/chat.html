@@ -46,7 +46,10 @@
       <!-- Chat Main -->
       <main class="col-md-9 col-lg-10 d-flex flex-column glass p-0">
         <div id="chat" class="flex-fill overflow-auto p-3 message-container"></div>
+        <!-- Chat Form -->
         <form id="chatForm" class="d-flex border-top p-2 glass" autocomplete="off">
+          <input type="file" id="fileInput" hidden>
+          <button type="button" class="btn btn-outline-light me-2" onclick="document.getElementById('fileInput').click()">📎</button>
           <input type="text" id="messageInput" class="form-control me-2" placeholder="Type your message..." required>
           <button class="btn btn-success">Send</button>
         </form>
@@ -89,9 +92,6 @@
   <script src="/socket.io/socket.io.js"></script>
   <script src="js/matrix.js"></script>
   <script>
-    function isMobileDevice() { return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent); }
-    if (isMobileDevice()) document.body.classList.add('mobile-view');
-
     const socket = io();
     let myName = null, currentTarget = "all", allMessages = [],
         onlineUserList = [], onlineUserMap = {}, allRegisteredUsers = [];
@@ -114,180 +114,168 @@
     function logout(){ fetch('/api/logout',{method:'POST'}).then(()=>location.href='/'); }
     function openSettings(){
       fetch('/api/session').then(r=>r.json()).then(d=>{
-        document.getElementById('settings-username').value = d.username;
-        document.getElementById('settings-email').value = d.email;
-        document.getElementById('current-avatar').src = d.avatar;
+        document.getElementById('settings-username').value=d.username;
+        document.getElementById('settings-email').value=d.email;
+        document.getElementById('current-avatar').src=d.avatar;
         new bootstrap.Modal(document.getElementById('userSettingsModal')).show();
       });
     }
     async function saveSettings(){
-      const fd = new FormData();
-      fd.append('username', document.getElementById('settings-username').value);
-      fd.append('email', document.getElementById('settings-email').value);
-      fd.append('oldpass', document.getElementById('settings-oldpass').value);
-      fd.append('newpass', document.getElementById('settings-newpass').value);
-      const a = document.getElementById('new-avatar-file').files[0];
-      if (a) fd.append('avatar', a);
-      const res = await fetch('/api/users/me',{method:'PUT',body:fd});
-      const data = await res.json();
-      document.getElementById('settings-msg').textContent = data.message || data.error;
-      if (res.ok) {
+      const fd=new FormData();
+      fd.append('username',document.getElementById('settings-username').value);
+      fd.append('email',document.getElementById('settings-email').value);
+      fd.append('oldpass',document.getElementById('settings-oldpass').value);
+      fd.append('newpass',document.getElementById('settings-newpass').value);
+      const a=document.getElementById('new-avatar-file').files[0];
+      if(a) fd.append('avatar',a);
+      const res=await fetch('/api/users/me',{method:'PUT',body:fd});
+      const data=await res.json();
+      document.getElementById('settings-msg').textContent=data.message||data.error;
+      if(res.ok){
         fetch('/api/session').then(r=>r.json()).then(sess=>{
-          document.getElementById('current-avatar').src = sess.avatar;
-          onlineUserMap[sess.username] = sess.avatar;
+          document.getElementById('current-avatar').src=sess.avatar;
+          onlineUserMap[sess.username]=sess.avatar;
           renderUserList();
         });
       }
     }
 
+    // File upload handler
+    document.getElementById('fileInput').addEventListener('change',async e=>{
+      const file=e.target.files[0];
+      if(!file) return;
+      const fd=new FormData();
+      fd.append('file',file);
+      const res=await fetch('/api/upload',{method:'POST',body:fd});
+      const data=await res.json();
+      socket.emit('fileMessage',{to:currentTarget,filePath:data.filePath,filename:data.filename});
+      e.target.value='';
+    });
+
     function renderUserList(){
-      const containers = [document.getElementById('onlineUsers'), document.getElementById('onlineUsersMobile')];
-      containers.forEach(c => c.innerHTML = '');
-      addUser({ username: 'all', avatar: groupIcon, role: null, online: true }, groupName, true);
-      allRegisteredUsers.forEach(u=>{
-        if (u.username !== myName) addUser(u, u.username, u.online);
-      });
+      const containers=[document.getElementById('onlineUsers'),document.getElementById('onlineUsersMobile')];
+      containers.forEach(c=>c.innerHTML='');
+      addUser({username:'all',avatar:groupIcon,role:null,online:true},groupName,true);
+      allRegisteredUsers.forEach(u=>{if(u.username!==myName) addUser(u,u.username,u.online);});
     }
 
-    function addUser(userObj, label, isOnline){
-      [document.getElementById('onlineUsers'), document.getElementById('onlineUsersMobile')].forEach(container=>{
-        const div = document.createElement('div');
-        div.className = 'list-group-item d-flex align-items-center';
-        if (currentTarget === userObj.username) div.classList.add('active');
-        const av = document.createElement('img');
-        av.className = 'rounded-circle me-2';
-        av.src = userObj.avatar || '/avatars/default.png';
-        av.style.width = '32px'; av.style.height = '32px';
-        const nameWrap = document.createElement('div');
-        nameWrap.textContent = label;
-        const statusWrap = document.createElement('span');
-        statusWrap.className = 'ms-auto';
-        const dot = document.createElement('span');
-        dot.className = `user-status-dot ${isOnline ? 'online' : 'offline'}`;
+    function addUser(userObj,label,isOnline){
+      [document.getElementById('onlineUsers'),document.getElementById('onlineUsersMobile')].forEach(container=>{
+        const div=document.createElement('div');
+        div.className='list-group-item d-flex align-items-center';
+        if(currentTarget===userObj.username) div.classList.add('active');
+        const av=document.createElement('img');
+        av.className='rounded-circle me-2';
+        av.src=userObj.avatar||'/avatars/default.png';
+        av.style.width='32px'; av.style.height='32px';
+        const nameWrap=document.createElement('div'); nameWrap.textContent=label;
+        const statusWrap=document.createElement('span'); statusWrap.className='ms-auto';
+        const dot=document.createElement('span'); dot.className=`user-status-dot ${isOnline?'online':'offline'}`;
         statusWrap.append(dot);
-        if (userObj.role === 'admin') {
-          const badge = document.createElement('span');
-          badge.className = 'badge bg-warning text-dark ms-2';
-          badge.textContent = 'Admin';
-          statusWrap.append(badge);
-        }
-        div.append(av, nameWrap, statusWrap);
-        div.onclick = () => {
-          currentTarget = userObj.username;
-          if (currentTarget === 'all') {
-            document.getElementById('groupNameSpan').textContent = groupName;
-          } else {
-            document.getElementById('groupNameSpan').textContent = `${userObj.username} ${isOnline ? '●online' : '●offline'}`;
-          }
-          renderUserList();
-          renderMessages();
+        if(userObj.role==='admin'){const badge=document.createElement('span'); badge.className='badge bg-warning text-dark ms-2'; badge.textContent='Admin'; statusWrap.append(badge);}
+        div.append(av,nameWrap,statusWrap);
+        div.onclick=()=>{ currentTarget=userObj.username;
+          if(currentTarget==='all') document.getElementById('groupNameSpan').textContent=groupName;
+          else document.getElementById('groupNameSpan').textContent=`${userObj.username} ${isOnline?'●online':'●offline'}`;
+          renderUserList(); renderMessages();
         };
         container.appendChild(div);
       });
     }
 
     function renderMessages(){
-      const chatDiv = document.getElementById('chat');
-      chatDiv.innerHTML = '';
-      const msgs = currentTarget === 'all'
+      const chatDiv=document.getElementById('chat');
+      chatDiv.innerHTML='';
+      const msgs=currentTarget==='all'
         ? allMessages.filter(m=>m.to==='all')
-        : allMessages.filter(m=>(m.from===myName && m.to===currentTarget) || (m.to===myName && m.from===currentTarget));
+        : allMessages.filter(m=>(m.from===myName&&m.to===currentTarget)||(m.to===myName&&m.from===currentTarget));
       msgs.forEach(m=>{
-        // Seen tracking
-        socket.emit('seen', m.id);
-        const wrap = document.createElement('div');
-        wrap.dataset.id = m.id; // For fade-out animation
-        wrap.style.display = 'flex';
-        wrap.style.alignItems = 'flex-end';
-        wrap.style.marginBottom = '10px';
-        const isMe = m.from === myName;
-        const av = document.createElement('img');
-        av.src = onlineUserMap[m.from] || '/avatars/default.png';
-        av.className = 'bubble-avatar';
-        const bub = document.createElement('div');
-        bub.className = 'msg-bubble ' + (isMe ? 'from-me' : 'from-them');
-        bub.textContent = m.text;
-        bub.oncontextmenu = e => { e.preventDefault(); showContextMenu(e.pageX, e.pageY, m.id); };
-        if (isMe) { wrap.style.justifyContent = 'flex-end'; wrap.append(bub, av); }
-        else { wrap.style.justifyContent = 'flex-start'; wrap.append(av, bub); }
+        socket.emit('seen',m.id);
+        const wrap=document.createElement('div'); wrap.dataset.id=m.id;
+        wrap.style.display='flex'; wrap.style.alignItems='flex-end'; wrap.style.marginBottom='10px';
+        const isMe=m.from===myName;
+        const bub=document.createElement('div'); bub.className='msg-bubble '+(isMe?'from-me':'from-them');
+
+        if(m.type==='file'){
+          const fname=(m.originalName||"").toLowerCase();
+          if(fname.match(/\.(jpg|jpeg|png|gif)$/i)){
+            const img=document.createElement('img'); img.src=m.text; img.className='chat-image'; bub.appendChild(img);
+            const link=document.createElement('a'); link.href=m.text; link.textContent=m.originalName||'Download Image'; link.download=link.textContent; link.style.display="block"; link.style.marginTop="5px"; bub.appendChild(link);
+          }
+          else if(fname.match(/\.(mp4|webm|ogg)$/i)){
+            const video=document.createElement('video'); video.src=m.text; video.controls=true; video.className='chat-video'; bub.appendChild(video);
+            const link=document.createElement('a'); link.href=m.text; link.textContent=m.originalName||'Download Video'; link.download=link.textContent; link.style.display="block"; link.style.marginTop="5px"; bub.appendChild(link);
+          }
+          else{
+            const link=document.createElement('a'); link.href=m.text; link.textContent=m.originalName||'Download File'; link.download=link.textContent; bub.appendChild(link);
+          }
+        } else {
+          bub.textContent=m.text;
+        }
+
+        bub.oncontextmenu=e=>{e.preventDefault();showContextMenu(e.pageX,e.pageY,m.id);};
+        if(isMe){ wrap.style.justifyContent='flex-end'; wrap.append(bub);}
+        else{ wrap.style.justifyContent='flex-start'; wrap.append(bub);}
         chatDiv.appendChild(wrap);
       });
-      chatDiv.scrollTop = chatDiv.scrollHeight;
+      chatDiv.scrollTop=chatDiv.scrollHeight;
     }
 
-    function showContextMenu(x, y, id) {
+    function showContextMenu(x,y,id){
       closeMenu();
-      const menu = document.getElementById('context-menu');
-      menu.style.left = x + 'px';
-      menu.style.top = y + 'px';
-      let m = allMessages.find(m2 => m2.id === id);
-      let btns = '';
-      btns += `<button onclick="socket.emit('save','${id}');closeMenu()">💾 Save</button>`;
-      if (myRole === 'admin' || (m && m.from === myName)) {
-        btns += `<button onclick="socket.emit('delete','${id}');closeMenu()">🗑 Delete for everyone</button>`;
+      const menu=document.getElementById('context-menu');
+      menu.style.left=x+'px'; menu.style.top=y+'px';
+      let m=allMessages.find(m2=>m2.id===id);
+      let btns=`<button onclick="socket.emit('save','${id}');closeMenu()">💾 Save</button>`;
+      if(myRole==='admin'||(m&&m.from===myName)){
+        btns+=`<button onclick="socket.emit('delete','${id}');closeMenu()">🗑 Delete for everyone</button>`;
       } else {
-        btns += `<button onclick="deleteJustForMe('${id}');closeMenu()">🗑 Delete for me</button>`;
+        btns+=`<button onclick="deleteJustForMe('${id}');closeMenu()">🗑 Delete for me</button>`;
       }
-      btns += `<button onclick="closeMenu()">Cancel</button>`;
-      menu.innerHTML = btns;
-      menu.style.display = 'block';
+      btns+=`<button onclick="closeMenu()">Cancel</button>`;
+      menu.innerHTML=btns; menu.style.display='block';
     }
 
-    function deleteJustForMe(id) {
-      const msgWrap = document.querySelector(`[data-id="${id}"]`);
-      if (msgWrap) {
+    function deleteJustForMe(id){
+      const msgWrap=document.querySelector(`[data-id="${id}"]`);
+      if(msgWrap){
         msgWrap.classList.add('fade-out');
-        setTimeout(() => {
-          allMessages = allMessages.filter(m => m.id !== id);
-          renderMessages();
-        }, 350);
-      } else {
-        allMessages = allMessages.filter(m => m.id !== id);
+        setTimeout(()=>{allMessages=allMessages.filter(m=>m.id!==id); renderMessages();},350);
+      }else{
+        allMessages=allMessages.filter(m=>m.id!==id);
         renderMessages();
       }
     }
+    function closeMenu(){document.getElementById('context-menu').style.display='none';}
 
-    function closeMenu(){ document.getElementById('context-menu').style.display='none'; }
-
-    socket.on('online', data=>{
-      onlineUserList = data.list;
-      groupName = data.groupName; groupIcon = data.groupIcon;
-      document.getElementById('groupIcon').src = groupIcon;
-      onlineUserMap = {};
-      data.list.forEach(u=>{ onlineUserMap[u.username] = u.avatar; });
-      allRegisteredUsers = allRegisteredUsers.map(u => ({
-        ...u,
-        online: onlineUserList.some(ou => ou.username === u.username)
-      }));
+    socket.on('online',data=>{
+      onlineUserList=data.list; groupName=data.groupName; groupIcon=data.groupIcon;
+      document.getElementById('groupIcon').src=groupIcon;
+      onlineUserMap={}; data.list.forEach(u=>{onlineUserMap[u.username]=u.avatar;});
+      allRegisteredUsers=allRegisteredUsers.map(u=>({...u,online:onlineUserList.some(ou=>ou.username===u.username)}));
       renderUserList();
     });
-
-    socket.on('history', msgs=>{ allMessages = msgs; renderMessages(); });
-    socket.on('message', msg=>{ allMessages.push(msg); renderMessages(); });
-
-    socket.on('deleteMessage', msgId => {
-      const msgWrap = document.querySelector(`[data-id="${msgId}"]`);
-      if (msgWrap) {
+    socket.on('history',msgs=>{allMessages=msgs;renderMessages();});
+    socket.on('message',msg=>{allMessages.push(msg);renderMessages();});
+    socket.on('deleteMessage',msgId=>{
+      const msgWrap=document.querySelector(`[data-id="${msgId}"]`);
+      if(msgWrap){
         msgWrap.classList.add('fade-out');
-        setTimeout(() => {
-          allMessages = allMessages.filter(m => m.id !== msgId);
-          renderMessages();
-        }, 350);
-      } else {
-        allMessages = allMessages.filter(m => m.id !== msgId);
+        setTimeout(()=>{allMessages=allMessages.filter(m=>m.id!==msgId); renderMessages();},350);
+      }else{
+        allMessages=allMessages.filter(m=>m.id!==msgId);
         renderMessages();
       }
     });
 
-    document.getElementById('chatForm').addEventListener('submit', e=>{
+    document.getElementById('chatForm').addEventListener('submit',e=>{
       e.preventDefault();
-      const t = document.getElementById('messageInput').value.trim();
-      if (!t) return;
-      socket.emit('send', { to: currentTarget, text: t });
-      document.getElementById('messageInput').value = '';
+      const t=document.getElementById('messageInput').value.trim();
+      if(!t) return;
+      socket.emit('send',{to:currentTarget,text:t});
+      document.getElementById('messageInput').value='';
     });
-
-    document.body.addEventListener('click', closeMenu);
+    document.body.addEventListener('click',closeMenu);
   </script>
 </body>
 </html>

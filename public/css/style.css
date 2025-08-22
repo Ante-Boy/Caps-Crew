@@ -314,3 +314,31 @@ html, body {
 .offline {
   color: #999;
 }
+/* Step 4: File & Image Preview */
+.chat-image {
+  max-width: 200px;
+  border-radius: 10px;
+  display: block;
+  margin-top: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+
+.msg-bubble a {
+  color: #1fffca;
+  font-weight: bold;
+  text-decoration: none;
+}
+.msg-bubble a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+  .chat-image { max-width: 150px; }
+}
+.chat-video {
+  max-width: 250px;
+  border-radius: 8px;
+  display: block;
+  margin-top: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
