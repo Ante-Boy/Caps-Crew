@@ -18,11 +18,11 @@ const PORT = process.env.PORT || 3000;
 let groupChatName = "RAW PROTOCOL Main Room";
 let groupChatIcon = "default-group.png";
 
-// Middleware
+// Middleware: strict session cookie (no persistence)
 app.use(cookieSession({
   name: 'session',
   keys: ['super-secret-key'],
-  maxAge: 24 * 60 * 60 * 1000
+  maxAge: null // session cookie only, expires on browser close
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -31,18 +31,16 @@ app.use('/avatars', express.static(path.join(__dirname, 'public/avatars')));
 app.use('/group-icons', express.static(path.join(__dirname, 'public/group-icons')));
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
-// Ensure directories exist
+// Ensure dirs
 if (!fs.existsSync('data')) fs.mkdirSync('data');
 if (!fs.existsSync('public/avatars')) fs.mkdirSync('public/avatars');
 if (!fs.existsSync('public/group-icons')) fs.mkdirSync('public/group-icons');
 if (!fs.existsSync('public/uploads')) fs.mkdirSync('public/uploads');
 
-// Multer setup
 const upload = multer({ dest: path.join(__dirname, 'public/avatars') });
 const groupUpload = multer({ dest: path.join(__dirname, 'public/group-icons') });
 const fileUpload = multer({ dest: path.join(__dirname, 'public/uploads') });
 
-// Data store
 const usersFile = 'data/users.json';
 const messagesFile = 'data/messages.json';
 if (!fs.existsSync(usersFile)) fs.writeFileSync(usersFile, '[]');
@@ -53,7 +51,7 @@ const writeUsers = u => fs.writeFileSync(usersFile, JSON.stringify(u, null, 2));
 const readMsgs = () => JSON.parse(fs.readFileSync(messagesFile));
 const writeMsgs = m => fs.writeFileSync(messagesFile, JSON.stringify(m, null, 2));
 
-// Encryption (Step 7: Random IV)
+// AES Encryption with random IV
 const AES_KEY = "0123456789abcdef0123456789abcdef";
 const encrypt = text => {
   const iv = crypto.randomBytes(16);
@@ -73,23 +71,38 @@ const decrypt = enc => {
   }
 };
 
-// ------- API Routes --------
+// Force-relogin middleware
+app.use((req, res, next) => {
+  // Allow login routes/resources
+  if (req.path.startsWith('/api/login') || req.path.startsWith('/login') || req.path === '/' || req.path.startsWith('/css') || req.path.startsWith('/js') || req.path.startsWith('/socket.io')) {
+    return next();
+  }
+  // If no valid session, redirect to login
+  if (!req.session.username) {
+    return res.redirect('/login');
+  }
+  // Clear session after serving route (enforce logout on refresh/back)
+  req.session = null;
+  next();
+});
+
+// Routes
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 app.get('/login', (req, res) => {
   if (req.session.username) return res.redirect('/chat.html');
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 app.get('/chat.html', (req, res) => {
-  if (!req.session.username) return res.redirect('/login');
+  if (!req.session || !req.session.username) return res.redirect('/login');
   res.sendFile(path.join(__dirname, 'public', 'chat.html'));
 });
 app.get('/admin.html', (req, res) => {
-  if (!req.session.username) return res.redirect('/login');
+  if (!req.session || !req.session.username) return res.redirect('/login');
   if (req.session.role !== 'admin') return res.status(403).send('Forbidden');
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
-// Auth endpoints
+// Authentication
 app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
   const user = readUsers().find(u => u.username === username);
@@ -101,11 +114,12 @@ app.post('/api/login', async (req, res) => {
   res.json({ message: 'OK', role: user.role });
 });
 app.post('/api/logout', (req, res) => { req.session = null; res.json({ ok: true }); });
+
 app.get('/api/session', (req, res) => {
-  const me = readUsers().find(u => u.username === req.session.username);
+  const me = readUsers().find(u => u.username === req.session?.username);
   res.json({
-    username: req.session.username || null,
-    role: req.session.role || 'user',
+    username: req.session?.username || null,
+    role: req.session?.role || 'user',
     email: me?.email || '',
     avatar: me ? `/avatars/${me.avatar}` : '/avatars/default.png'
   });
@@ -122,17 +136,14 @@ app.get('/api/allusers', (req, res) => {
   })));
 });
 
-// File upload API (Step 4 refinement: return originalName)
+// File upload
 app.post('/api/upload', fileUpload.single('file'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file' });
   const filePath = `/uploads/${req.file.filename}`;
-  res.json({
-    filePath,
-    filename: req.file.originalname || req.file.filename
-  });
+  res.json({ filePath, filename: req.file.originalname || req.file.filename });
 });
 
-// --------- Socket.IO Chat --------
+// Socket.IO
 let onlineUsers = {};
 io.on('connection', socket => {
   let username = null;
@@ -153,30 +164,16 @@ io.on('connection', socket => {
     if (me) userRole = me.role;
     onlineUsers[username] = socket.id;
 
-    // load chat history
     const history = readMsgs()
       .filter(m => m.to === 'all' || m.to === username || m.from === username)
-      .map(m => {
-        if (m.type === 'file') return { ...m };
-        return { ...m, text: decrypt(m.text) };
-      });
+      .map(m => (m.type === 'file') ? { ...m } : { ...m, text: decrypt(m.text) });
     socket.emit('history', history);
     emitOnlineList();
   });
 
-  // Text message
   socket.on('send', data => {
-    const msg = {
-      id: uuidv4(),
-      from: username,
-      to: data.to,
-      text: encrypt(data.text),
-      type: 'text',
-      seen: [username]
-    };
-    const arr = readMsgs();
-    arr.push(msg);
-    writeMsgs(arr);
+    const msg = { id: uuidv4(), from: username, to: data.to, text: encrypt(data.text), type: 'text', seen: [username] };
+    const arr = readMsgs(); arr.push(msg); writeMsgs(arr);
     const toSend = { ...msg, text: data.text };
     if (data.to === 'all') io.emit('message', toSend);
     else {
@@ -185,20 +182,9 @@ io.on('connection', socket => {
     }
   });
 
-  // File message - always store originalName
   socket.on('fileMessage', data => {
-    const msg = {
-      id: uuidv4(),
-      from: username,
-      to: data.to,
-      text: data.filePath,
-      originalName: data.filename || "file.bin",
-      type: 'file',
-      seen: [username]
-    };
-    const arr = readMsgs();
-    arr.push(msg);
-    writeMsgs(arr);
+    const msg = { id: uuidv4(), from: username, to: data.to, text: data.filePath, originalName: data.filename || "file.bin", type: 'file', seen: [username] };
+    const arr = readMsgs(); arr.push(msg); writeMsgs(arr);
     if (data.to === 'all') io.emit('message', msg);
     else {
       if (onlineUsers[username]) io.to(onlineUsers[username]).emit('message', msg);
@@ -206,33 +192,19 @@ io.on('connection', socket => {
     }
   });
 
-  // Seen event
   socket.on('seen', msgId => {
-    const msgs = readMsgs();
-    const msg = msgs.find(m => m.id === msgId);
-    if (msg && !msg.seen.includes(username)) {
-      msg.seen.push(username);
-      writeMsgs(msgs);
-    }
+    const msgs = readMsgs(); const msg = msgs.find(m => m.id === msgId);
+    if (msg && !msg.seen.includes(username)) { msg.seen.push(username); writeMsgs(msgs); }
   });
 
-  // Delete event (sender/admin)
   socket.on('delete', msgId => {
-    const msgs = readMsgs();
-    const idx = msgs.findIndex(m => m.id === msgId);
+    const msgs = readMsgs(); const idx = msgs.findIndex(m => m.id === msgId);
     if (idx >= 0) {
-      const msg = msgs[idx];
-      const isSender = msg.from === username;
-      const isAdmin = userRole === 'admin';
-      if (isSender || isAdmin) {
-        msgs.splice(idx, 1);
-        writeMsgs(msgs);
-        io.emit('deleteMessage', msgId);
-      }
+      const msg = msgs[idx]; const isSender = msg.from === username; const isAdmin = userRole === 'admin';
+      if (isSender || isAdmin) { msgs.splice(idx, 1); writeMsgs(msgs); io.emit('deleteMessage', msgId); }
     }
   });
 
-  // Disconnect cleanup (auto delete seen messages)
   socket.on('disconnect', () => {
     if (onlineUsers[username]) delete onlineUsers[username];
     if (username) {
@@ -240,14 +212,8 @@ io.on('connection', socket => {
       const users = readUsers().map(u => u.username);
       msgs = msgs.filter(m => {
         if (m.from === username) {
-          if (m.to === 'all' && m.seen.length >= users.length) {
-            io.emit('deleteMessage', m.id);
-            return false;
-          }
-          if (m.to !== 'all' && m.seen.includes(m.from) && m.seen.includes(m.to)) {
-            io.emit('deleteMessage', m.id);
-            return false;
-          }
+          if (m.to === 'all' && m.seen.length >= users.length) { io.emit('deleteMessage', m.id); return false; }
+          if (m.to !== 'all' && m.seen.includes(m.from) && m.seen.includes(m.to)) { io.emit('deleteMessage', m.id); return false; }
         }
         return true;
       });
