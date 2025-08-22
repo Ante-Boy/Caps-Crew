@@ -14,16 +14,24 @@ const server = http.createServer(app);
 const io = new Server(server);
 const PORT = process.env.PORT || 3000;
 
-// Group chat
+// Group settings
 let groupChatName = "RAW PROTOCOL Main Room";
 let groupChatIcon = "default-group.png";
 
-// Middleware: strict session cookie (no persistence)
+// Session cookie (dies on browser close)
 app.use(cookieSession({
   name: 'session',
   keys: ['super-secret-key'],
-  maxAge: null // session cookie only, expires on browser close
+  maxAge: null // session cookie only
 }));
+
+// Prevent caching so Back button forces fresh request
+app.use((req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store');
+  next();
+});
+
+// Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
@@ -31,7 +39,7 @@ app.use('/avatars', express.static(path.join(__dirname, 'public/avatars')));
 app.use('/group-icons', express.static(path.join(__dirname, 'public/group-icons')));
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
-// Ensure dirs
+// Ensure dirs exist
 if (!fs.existsSync('data')) fs.mkdirSync('data');
 if (!fs.existsSync('public/avatars')) fs.mkdirSync('public/avatars');
 if (!fs.existsSync('public/group-icons')) fs.mkdirSync('public/group-icons');
@@ -51,7 +59,7 @@ const writeUsers = u => fs.writeFileSync(usersFile, JSON.stringify(u, null, 2));
 const readMsgs = () => JSON.parse(fs.readFileSync(messagesFile));
 const writeMsgs = m => fs.writeFileSync(messagesFile, JSON.stringify(m, null, 2));
 
-// AES Encryption with random IV
+// AES Encryption (Step 7)
 const AES_KEY = "0123456789abcdef0123456789abcdef";
 const encrypt = text => {
   const iv = crypto.randomBytes(16);
@@ -71,38 +79,23 @@ const decrypt = enc => {
   }
 };
 
-// Force-relogin middleware
-app.use((req, res, next) => {
-  // Allow login routes/resources
-  if (req.path.startsWith('/api/login') || req.path.startsWith('/login') || req.path === '/' || req.path.startsWith('/css') || req.path.startsWith('/js') || req.path.startsWith('/socket.io')) {
-    return next();
-  }
-  // If no valid session, redirect to login
-  if (!req.session.username) {
-    return res.redirect('/login');
-  }
-  // Clear session after serving route (enforce logout on refresh/back)
-  req.session = null;
-  next();
-});
-
-// Routes
+// ---------- Routes ----------
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 app.get('/login', (req, res) => {
-  if (req.session.username) return res.redirect('/chat.html');
+  if (req.session?.username) return res.redirect('/chat.html');
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 app.get('/chat.html', (req, res) => {
-  if (!req.session || !req.session.username) return res.redirect('/login');
+  if (!req.session?.username) return res.redirect('/login');
   res.sendFile(path.join(__dirname, 'public', 'chat.html'));
 });
 app.get('/admin.html', (req, res) => {
-  if (!req.session || !req.session.username) return res.redirect('/login');
+  if (!req.session?.username) return res.redirect('/login');
   if (req.session.role !== 'admin') return res.status(403).send('Forbidden');
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
-// Authentication
+// Auth
 app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
   const user = readUsers().find(u => u.username === username);
@@ -136,14 +129,17 @@ app.get('/api/allusers', (req, res) => {
   })));
 });
 
-// File upload
+// File upload (Step 4)
 app.post('/api/upload', fileUpload.single('file'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file' });
   const filePath = `/uploads/${req.file.filename}`;
-  res.json({ filePath, filename: req.file.originalname || req.file.filename });
+  res.json({
+    filePath,
+    filename: req.file.originalname || req.file.filename
+  });
 });
 
-// Socket.IO
+// ---------- Socket.IO ----------
 let onlineUsers = {};
 io.on('connection', socket => {
   let username = null;
@@ -183,7 +179,15 @@ io.on('connection', socket => {
   });
 
   socket.on('fileMessage', data => {
-    const msg = { id: uuidv4(), from: username, to: data.to, text: data.filePath, originalName: data.filename || "file.bin", type: 'file', seen: [username] };
+    const msg = {
+      id: uuidv4(),
+      from: username,
+      to: data.to,
+      text: data.filePath,
+      originalName: data.filename || "file.bin",
+      type: 'file',
+      seen: [username]
+    };
     const arr = readMsgs(); arr.push(msg); writeMsgs(arr);
     if (data.to === 'all') io.emit('message', msg);
     else {
