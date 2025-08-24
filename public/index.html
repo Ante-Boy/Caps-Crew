@@ -1,25 +1,604 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>RAW PROTOCOL - Home</title>
-  <!-- Bootstrap for layout -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <!-- Your app styles -->
-  <link rel="stylesheet" href="css/style.css">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Captain Tiwana’s Crew Gallery</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap');
+
+  body, html {
+    height: 100%;
+    margin: 0;
+    font-family: 'Montserrat', sans-serif;
+    background: linear-gradient(-45deg, #b91c1c, #9333ea, #db2777, #f43f5e);
+    background-size: 400% 400%;
+    animation: gradientBG 15s ease infinite;
+    color: #f1f5f9;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  @keyframes gradientBG {
+    0% {background-position: 0% 50%;}
+    50% {background-position: 100% 50%;}
+    100% {background-position: 0% 50%;}
+  }
+
+  #backgroundCanvas {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 0;
+    mix-blend-mode: screen;
+  }
+
+  nav {
+    background: rgba(30, 18, 23, 0.85);
+    backdrop-filter: blur(10px);
+    padding: 12px 24px;
+    position: sticky;
+    top: 0;
+    z-index: 10001;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  nav .nav-links {
+    display: flex;
+    gap: 16px;
+  }
+  nav a {
+    color: #ffd6dc;
+    text-decoration: none;
+    font-weight: 600;
+    padding: 8px 14px;
+    border-radius: 8px;
+    transition: background-color 0.3s ease;
+  }
+  nav a:hover, nav a.active {
+    background-color: #db2777;
+    color: white;
+  }
+
+  .header-title {
+    max-width: 1200px;
+    margin: 30px auto 15px;
+    padding: 0 20px;
+    text-align: center;
+    position: relative;
+    z-index: 10;
+  }
+  .header-title h1 {
+    margin: 0;
+    font-weight: 900;
+    font-size: 3rem;
+    color: #fef2f2;
+    text-shadow: 0 0 8px #f97316aa, 0 0 12px #db2777bb;
+  }
+  .header-title p {
+    margin: 6px 0 0 0;
+    font-weight: 600;
+    font-size: 1.25rem;
+    color: #fecaca;
+    letter-spacing: 1.2px;
+  }
+
+  main.container {
+    flex: 1;
+    max-width: 1200px;
+    margin: 20px auto 40px;
+    padding: 0 20px;
+    position: relative;
+    z-index: 10;
+  }
+
+  h2.section-title {
+    border-left: 6px solid #f87171;
+    padding-left: 12px;
+    margin-bottom: 20px;
+    font-weight: 700;
+    font-size: 1.8rem;
+    color: #fee2e2;
+    text-shadow: 0 0 3px #b91c1caa;
+  }
+
+  #searchBar {
+    width: 100%;
+    max-width: 480px;
+    padding: 12px 16px;
+    margin-bottom: 40px;
+    border: none;
+    border-radius: 10px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    outline: none;
+    box-shadow: 0 0 12px #f87171aa;
+    background: rgba(255 255 255 / 0.1);
+    color: #fecaca;
+    transition: box-shadow 0.4s ease;
+  }
+  #searchBar::placeholder {
+    color: #fca5a5;
+    font-weight: 500;
+  }
+  #searchBar:focus {
+    box-shadow: 0 0 18px #ea580c;
+    background: rgba(255 255 255 / 0.15);
+  }
+
+  section.video-section {
+    margin-bottom: 64px;
+  }
+  .video-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+    gap: 26px;
+  }
+  .video-card {
+    background: rgba(255 255 255 / 0.15);
+    border-radius: 18px;
+    box-shadow: 0 0 14px rgb(255 71 71 / 0.3);
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.28s ease, box-shadow 0.28s ease;
+    display: flex;
+    flex-direction: column;
+  }
+  .video-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 14px 28px rgb(219 39 119 / 0.7);
+  }
+  .video-thumb {
+    width: 100%;
+    height: 170px;
+    object-fit: cover;
+  }
+  .video-info {
+    padding: 18px;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .video-title {
+    font-weight: 800;
+    font-size: 1.1rem;
+    margin: 0 0 8px 0;
+    color: #ffe4e6;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .video-date {
+    font-size: 0.88rem;
+    color: #fca5a5;
+    margin: 0;
+  }
+
+  .load-more-button {
+    background: #db2777;
+    border: none;
+    color: white;
+    border-radius: 12px;
+    padding: 12px 28px;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    margin: 20px auto 0;
+    display: block;
+    transition: background-color 0.3s ease;
+  }
+  .load-more-button:hover {
+    background-color: #b91c1c;
+  }
+
+  .modal-content {
+    border-radius: 18px;
+    background: #240000;
+  }
+  .modal-dialog {
+    max-width: 890px;
+  }
+  .ratio {
+    border-radius: 18px;
+    overflow: hidden;
+  }
+
+  footer {
+    background-color: #240000;
+    color: #fccaca;
+    text-align: center;
+    padding: 24px 16px;
+    font-size: 0.95rem;
+    user-select: none;
+  }
+  footer a {
+    color: #f87171;
+    text-decoration: none;
+    margin: 0 14px;
+    font-weight: 600;
+    transition: color 0.3s ease;
+  }
+  footer a:hover {
+    color: #fca5a5;
+  }
+
+  @media (max-width: 576px) {
+    nav {
+      flex-direction: column;
+      gap: 10px;
+      text-align: center;
+    }
+    .header-title h1 {
+      font-size: 2.2rem;
+    }
+    .video-thumb {
+      height: 150px;
+    }
+  }
+</style>
 </head>
 <body>
-  <!-- Background -->
-  <canvas id="matrixCanvas"></canvas>
+<canvas id="backgroundCanvas"></canvas>
 
-  <!-- Content -->
-  <div class="d-flex flex-column justify-content-center align-items-center vh-100 position-relative" style="z-index: 10;">
-    <h1 class="login-title mb-3">RAW PROTOCOL</h1>
-    <p class="login-tagline mb-4">Encrypted Reality Grid</p>
-    <a href="/login" class="btn btn-gradient btn-lg">Login</a>
+<nav>
+  <a href="index.html" class="active">Home</a>
+  <div class="nav-links">
+    <a href="about.html">About Us</a>
+    <a href="/login">Login</a>
   </div>
+</nav>
 
-  <script src="js/matrix.js"></script>
+<div class="header-title" role="banner" aria-label="Page title and tagline">
+  <h1>Captain Tiwana’s Crew Gallery</h1>
+  <p>Curated Videos from the Captain’s Crew</p>
+</div>
+
+<main class="container" role="main" aria-label="Video gallery sections">
+  <input
+    type="text"
+    id="searchBar"
+    placeholder="Search videos..."
+    aria-label="Search videos"
+    autocomplete="off"
+    spellcheck="false"
+  />
+
+  <section class="video-section" aria-labelledby="shorts-title">
+    <h2 id="shorts-title" class="section-title">Shorts</h2>
+    <div id="shortsGallery" class="video-grid"></div>
+    <button class="load-more-button" id="loadMoreShorts" style="display:none;">Load More Shorts</button>
+  </section>
+
+  <section class="video-section" aria-labelledby="videos-title">
+    <h2 id="videos-title" class="section-title">Videos</h2>
+    <div id="videosGallery" class="video-grid"></div>
+    <button class="load-more-button" id="loadMoreVideos" style="display:none;">Load More Videos</button>
+  </section>
+
+  <section class="video-section" aria-labelledby="live-title">
+    <h2 id="live-title" class="section-title">Live Streams</h2>
+    <div id="liveGallery" class="video-grid"></div>
+  </section>
+</main>
+
+<div class="modal fade" id="videoModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="ratio ratio-16x9">
+        <iframe id="videoPlayer" src="" frameborder="0" allowfullscreen></iframe>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <p>
+    © 2025 Captain Tiwana’s Crew Gallery •
+    <a
+      href="https://www.youtube.com/@CaptainTiwana"
+      target="_blank"
+      rel="noopener noreferrer"
+      >YouTube Channel</a
+    >
+  </p>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+  const canvas = document.getElementById("backgroundCanvas");
+  const ctx = canvas.getContext("2d");
+  let shapes = [];
+  const shapeCount = 30;
+
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  window.addEventListener("resize", resize);
+  resize();
+
+  class Shape {
+    constructor() {
+      this.reset();
+    }
+    reset() {
+      this.x = Math.random() * canvas.width;
+      this.y = Math.random() * canvas.height;
+      this.size = Math.random() * 40 + 30;
+      this.speedX = (Math.random() - 0.5) * 0.4;
+      this.speedY = (Math.random() - 0.5) * 0.4;
+      this.type = ["square", "circle", "triangle"][
+        Math.floor(Math.random() * 3)
+      ];
+      this.color = `rgba(219, 39, 119, 0.25)`;
+      this.rotation = 0;
+      this.rotationSpeed = (Math.random() - 0.5) * 0.008;
+    }
+    draw() {
+      ctx.save();
+      ctx.translate(this.x, this.y);
+      ctx.rotate(this.rotation);
+      ctx.fillStyle = this.color;
+      switch (this.type) {
+        case "square":
+          ctx.fillRect(-this.size / 2, -this.size / 2, this.size, this.size);
+          break;
+        case "circle":
+          ctx.beginPath();
+          ctx.arc(0, 0, this.size / 2, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+        case "triangle":
+          ctx.beginPath();
+          ctx.moveTo(0, -this.size / 2);
+          ctx.lineTo(this.size / 2, this.size / 2);
+          ctx.lineTo(-this.size / 2, this.size / 2);
+          ctx.closePath();
+          ctx.fill();
+          break;
+      }
+      ctx.restore();
+    }
+    update() {
+      this.x += this.speedX;
+      this.y += this.speedY;
+      this.rotation += this.rotationSpeed;
+
+      if (this.x < -this.size) this.x = canvas.width + this.size;
+      else if (this.x > canvas.width + this.size) this.x = -this.size;
+
+      if (this.y < -this.size) this.y = canvas.height + this.size;
+      else if (this.y > canvas.height + this.size) this.y = -this.size;
+    }
+  }
+
+  for (let i = 0; i < shapeCount; i++) {
+    shapes.push(new Shape());
+  }
+
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    shapes.forEach((shape) => {
+      shape.update();
+      shape.draw();
+    });
+    requestAnimationFrame(animate);
+  }
+  animate();
+
+  // YouTube API Setup
+  const API_KEY = "AIzaSyCqpumT6AY6DR6kSQOPgfZGHkhWW7U8tFA";
+  const CHANNEL_ID = "UCqIwlyTeit3WdP8qWopIyKA";
+  const UPLOADS_PLAYLIST = "UUqIwlyTeit3WdP8qWopIyKA";
+  const MAX_LOAD_BATCH = 12;
+
+  // DOM references
+  const shortsGallery = document.getElementById("shortsGallery");
+  const videosGallery = document.getElementById("videosGallery");
+  const liveGallery = document.getElementById("liveGallery");
+  const modal = new bootstrap.Modal(document.getElementById("videoModal"));
+  const player = document.getElementById("videoPlayer");
+  const searchBar = document.getElementById("searchBar");
+
+  // Data arrays
+  let shortsVideos = [];
+  let normalVideos = [];
+  let liveVideos = [];
+
+  // Pagination index
+  let shortsIndex = 0;
+  let normalIndex = 0;
+
+  // Load More buttons
+  const loadMoreShortsBtn = document.getElementById("loadMoreShorts");
+  const loadMoreVideosBtn = document.getElementById("loadMoreVideos");
+
+  function parseISO8601Duration(duration) {
+    const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+    const hours = parseInt(match[1] || 0);
+    const minutes = parseInt(match[2] || 0);
+    const seconds = parseInt(match[3] || 0);
+    return hours * 3600 + minutes * 60 + seconds;
+  }
+
+  async function fetchUploads() {
+    const response = await fetch(
+      `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet,contentDetails&maxResults=50&playlistId=${UPLOADS_PLAYLIST}&key=${API_KEY}`
+    );
+    const result = await response.json();
+    return result.items || [];
+  }
+
+  async function fetchDurations(videoIds) {
+    if (videoIds.length === 0) return {};
+    const idsString = videoIds.join(",");
+    const response = await fetch(
+      `https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${idsString}&key=${API_KEY}`
+    );
+    const result = await response.json();
+    let durations = {};
+    result.items.forEach((item) => {
+      durations[item.id] = parseISO8601Duration(item.contentDetails.duration);
+    });
+    return durations;
+  }
+
+  async function fetchLiveStreams() {
+    const response = await fetch(
+      `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${CHANNEL_ID}&type=video&eventType=live&key=${API_KEY}&maxResults=12`
+    );
+    const result = await response.json();
+    return result.items || [];
+  }
+
+  async function fetchPastLiveStreams() {
+    const response = await fetch(
+      `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${CHANNEL_ID}&type=video&eventType=completed&key=${API_KEY}&maxResults=50`
+    );
+    const result = await response.json();
+    return result.items || [];
+  }
+
+  function displayVideosBatch(container, videos, startIndex, count) {
+    let videosToShow = videos.slice(startIndex, startIndex + count);
+    if (startIndex === 0) container.innerHTML = "";
+    container.insertAdjacentHTML(
+      "beforeend",
+      videosToShow
+        .map((video) => {
+          return `
+        <div class="video-card" onclick="playVideo('${video.videoId}')">
+          <img src="${video.thumbnail}" alt="Thumbnail of ${video.title}" class="video-thumb"/>
+          <div class="video-info">
+            <h3 class="video-title" title="${video.title}">${video.title}</h3>
+            <p class="video-date">${new Date(video.publishedAt).toLocaleDateString()}</p>
+          </div>
+        </div>`;
+        })
+        .join("")
+    );
+
+    if (startIndex + count >= videos.length) {
+      if (container === shortsGallery) loadMoreShortsBtn.style.display = "none";
+      if (container === videosGallery) loadMoreVideosBtn.style.display = "none";
+    } else {
+      if (container === shortsGallery) loadMoreShortsBtn.style.display = "block";
+      if (container === videosGallery) loadMoreVideosBtn.style.display = "block";
+    }
+  }
+
+  async function loadVideos() {
+    const uploads = await fetchUploads();
+    const videoIds = uploads.map((item) => item.contentDetails.videoId);
+    const durations = await fetchDurations(videoIds);
+
+    const liveItems = await fetchLiveStreams();
+    const pastLiveItems = await fetchPastLiveStreams();
+
+    // Combine current live and past live streams
+    const allLiveItems = [...liveItems, ...pastLiveItems];
+
+    const liveVideoIds = new Set(
+      allLiveItems.map((item) => item.id.videoId).filter(Boolean)
+    );
+
+    shortsVideos = [];
+    normalVideos = [];
+
+    uploads.forEach((item) => {
+      const vid = item.contentDetails.videoId;
+      if (liveVideoIds.has(vid)) {
+        return; // exclude live/past live streams from uploads list
+      }
+      const durationSeconds = durations[vid] || 0;
+      const videoObj = {
+        videoId: vid,
+        title: item.snippet.title,
+        thumbnail: item.snippet.thumbnails.high.url,
+        publishedAt: item.snippet.publishedAt,
+      };
+      if (durationSeconds <= 120) {
+        shortsVideos.push(videoObj);
+      } else {
+        normalVideos.push(videoObj);
+      }
+    });
+
+    liveVideos = allLiveItems
+      .filter((item) => item.id.videoId)
+      .map((item) => ({
+        videoId: item.id.videoId,
+        title: item.snippet.title,
+        thumbnail: item.snippet.thumbnails.high.url,
+        publishedAt: item.snippet.publishedAt,
+      }));
+
+    shortsIndex = 0;
+    normalIndex = 0;
+
+    displayVideosBatch(shortsGallery, shortsVideos, shortsIndex, MAX_LOAD_BATCH);
+    displayVideosBatch(videosGallery, normalVideos, normalIndex, MAX_LOAD_BATCH);
+    displayVideosBatch(liveGallery, liveVideos, 0, liveVideos.length);
+
+    searchBar.value = "";
+  }
+
+  function playVideo(videoId) {
+    player.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`;
+    modal.show();
+  }
+
+  document
+    .getElementById("videoModal")
+    .addEventListener("hidden.bs.modal", () => {
+      player.src = "";
+    });
+
+  let debounceTimeout;
+  searchBar.addEventListener("input", () => {
+    clearTimeout(debounceTimeout);
+    debounceTimeout = setTimeout(() => {
+      const query = searchBar.value.toLowerCase();
+
+      const filteredShorts = shortsVideos.filter((v) =>
+        v.title.toLowerCase().includes(query)
+      );
+      const filteredVideos = normalVideos.filter((v) =>
+        v.title.toLowerCase().includes(query)
+      );
+      const filteredLives = liveVideos.filter((v) =>
+        v.title.toLowerCase().includes(query)
+      );
+
+      shortsIndex = 0;
+      normalIndex = 0;
+
+      displayVideosBatch(shortsGallery, filteredShorts, 0, MAX_LOAD_BATCH);
+      displayVideosBatch(videosGallery, filteredVideos, 0, MAX_LOAD_BATCH);
+      displayVideosBatch(liveGallery, filteredLives, 0, filteredLives.length);
+
+      loadMoreShortsBtn.style.display =
+        filteredShorts.length > MAX_LOAD_BATCH ? "block" : "none";
+      loadMoreVideosBtn.style.display =
+        filteredVideos.length > MAX_LOAD_BATCH ? "block" : "none";
+    }, 300);
+  });
+
+  loadMoreShortsBtn.addEventListener("click", () => {
+    shortsIndex += MAX_LOAD_BATCH;
+    displayVideosBatch(shortsGallery, shortsVideos, shortsIndex, MAX_LOAD_BATCH);
+  });
+
+  loadMoreVideosBtn.addEventListener("click", () => {
+    normalIndex += MAX_LOAD_BATCH;
+    displayVideosBatch(videosGallery, normalVideos, normalIndex, MAX_LOAD_BATCH);
+  });
+
+  loadVideos();
+</script>
 </body>
 </html>

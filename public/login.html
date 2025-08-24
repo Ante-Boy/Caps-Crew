@@ -1,36 +1,212 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>RAW PROTOCOL - Login</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Login — Captain Tiwana’s Crew Gallery</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap');
+
+  body, html {
+    margin: 0;
+    font-family: 'Montserrat', sans-serif;
+    background: linear-gradient(-45deg, #b91c1c, #9333ea, #db2777, #f43f5e);
+    background-size: 400% 400%;
+    animation: gradientBG 15s ease infinite;
+    color: #f1f5f9;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+  }
+  @keyframes gradientBG {
+    0% {background-position: 0% 50%;}
+    50% {background-position: 100% 50%;}
+    100% {background-position: 0% 50%;}
+  }
+  #backgroundCanvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 0;
+    pointer-events: none;
+    mix-blend-mode: screen;
+  }
+  .login-container {
+    background: rgba(255 255 255 / 0.1);
+    padding: 40px 30px;
+    border-radius: 16px;
+    box-shadow: 0 0 22px rgba(219, 39, 119, 0.6);
+    max-width: 400px;
+    width: 100%;
+    text-align: center;
+    position: relative;
+    z-index: 10;
+  }
+  a.home-btn {
+    display: inline-block;
+    margin-bottom: 20px;
+    color: #fca5a5;
+    font-weight: 600;
+    text-decoration: none;
+    border: 2px solid #db2777;
+    padding: 8px 16px;
+    border-radius: 8px;
+    transition: background-color 0.3s ease;
+  }
+  a.home-btn:hover {
+    background-color: #db2777;
+    color: white;
+  }
+  .login-container h2 {
+    font-weight: 900;
+    font-size: 2.2rem;
+    color: #fca5a5;
+    margin-bottom: 24px;
+    text-shadow: 0 0 6px #db2777cc;
+  }
+  .error-msg {
+    color: #ff6b6b;
+    margin-bottom: 15px;
+  }
+  input, button {
+    width: 100%;
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 20px;
+    font-size: 1.1rem;
+    border: none;
+    outline: none;
+    box-sizing: border-box;
+  }
+  input {
+    background: #1e1e2f;
+    color: #fca5a5;
+    box-shadow: inset 0 0 8px rgba(219, 39, 119, 0.4);
+  }
+  input:focus {
+    background: #2a1a2e;
+    box-shadow: inset 0 0 12px #db2777cc;
+  }
+  button {
+    background-color: #db2777;
+    color: white;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    box-shadow: 0 4px 14px rgba(219, 39, 119, 0.6);
+  }
+  button:hover {
+    background-color: #b91c1c;
+    box-shadow: 0 6px 18px rgba(185, 28, 28, 0.9);
+  }
+</style>
 </head>
 <body>
-  <canvas id="matrixCanvas"></canvas>
 
-  <div class="login-wrapper d-flex justify-content-center align-items-center vh-100">
-    <div class="glass-card p-4 text-center">
-      <h1 class="login-title">RAW PROTOCOL</h1>
-      <p class="login-tagline">Encrypted Reality Grid</p>
-      <form id="loginForm" class="mt-4">
-        <div class="mb-3 text-start">
-          <label for="username" class="form-label">Username</label>
-          <input id="username" name="username" class="form-control" required autofocus>
-        </div>
-        <div class="mb-3 text-start">
-          <label for="password" class="form-label">Password</label>
-          <input id="password" name="password" type="password" class="form-control" required>
-        </div>
-        <button class="btn btn-gradient w-100" type="submit">Login</button>
-        <div id="loginError" class="text-danger small mt-2" style="display:none;">Invalid username or password</div>
-      </form>
-    </div>
-  </div>
+<canvas id="backgroundCanvas"></canvas>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="js/matrix.js"></script>
-  <script src="js/login.js"></script>
+<div class="login-container" role="main" aria-labelledby="loginTitle">
+  <a href="index.html" class="home-btn">Home</a>
+  <h2 id="loginTitle">Login</h2>
+
+  <div id="error" class="error-msg" aria-live="assertive"></div>
+
+  <form id="loginForm" novalidate>
+    <input
+      type="text"
+      id="username"
+      name="username"
+      placeholder="Username"
+      autocomplete="username"
+      required
+      aria-required="true"
+    />
+    <input
+      type="password"
+      id="password"
+      name="password"
+      placeholder="Password"
+      autocomplete="current-password"
+      required
+      aria-required="true"
+    />
+    <button type="submit" aria-label="Login to your account">Login</button>
+  </form>
+</div>
+
+<script src="js/login.js"></script>
+
+<script>
+  const canvas = document.getElementById('backgroundCanvas');
+  const ctx = canvas.getContext('2d');
+
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  class Shape {
+    constructor() { this.reset(); }
+    reset() {
+      this.x = Math.random() * canvas.width;
+      this.y = Math.random() * canvas.height;
+      this.size = Math.random() * 40 + 30;
+      this.speedX = (Math.random() - 0.5) * 0.4;
+      this.speedY = (Math.random() - 0.5) * 0.4;
+      this.type = ['square', 'circle', 'triangle'][Math.floor(Math.random() * 3)];
+      this.color = `rgba(219, 39, 119, 0.25)`;
+      this.rotation = 0;
+      this.rotationSpeed = (Math.random() - 0.5) * 0.008;
+    }
+    draw() {
+      ctx.save();
+      ctx.translate(this.x, this.y);
+      ctx.rotate(this.rotation);
+      ctx.fillStyle = this.color;
+      switch(this.type) {
+        case 'square': ctx.fillRect(-this.size/2, -this.size/2, this.size, this.size); break;
+        case 'circle': ctx.beginPath(); ctx.arc(0, 0, this.size/2, 0, Math.PI*2); ctx.fill(); break;
+        case 'triangle':
+          ctx.beginPath();
+          ctx.moveTo(0, -this.size/2);
+          ctx.lineTo(this.size/2, this.size/2);
+          ctx.lineTo(-this.size/2, this.size/2);
+          ctx.closePath();
+          ctx.fill();
+          break;
+      }
+      ctx.restore();
+    }
+    update() {
+      this.x += this.speedX;
+      this.y += this.speedY;
+      this.rotation += this.rotationSpeed;
+      if (this.x < -this.size) this.x = canvas.width + this.size;
+      else if (this.x > canvas.width + this.size) this.x = -this.size;
+      if (this.y < -this.size) this.y = canvas.height + this.size;
+      else if (this.y > canvas.height + this.size) this.y = -this.size;
+    }
+  }
+
+  const shapes = [];
+  for(let i = 0; i < 30; i++) shapes.push(new Shape());
+
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    shapes.forEach(shape => {
+      shape.update();
+      shape.draw();
+    });
+    requestAnimationFrame(animate);
+  }
+  animate();
+</script>
+
 </body>
 </html>

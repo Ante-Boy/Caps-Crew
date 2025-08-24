@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>About Us — Captain Tiwana’s Crew Gallery</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+<!-- Mailchimp embed form CSS -->
+<link href="https://cdn-images.mailchimp.com/embedcode/classic-061523.css" rel="stylesheet" type="text/css" />
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap');
+
+  body, html {
+    margin: 0;
+    font-family: 'Montserrat', sans-serif;
+    background: linear-gradient(-45deg, #b91c1c, #9333ea, #db2777, #f43f5e);
+    background-size: 400% 400%;
+    animation: gradientBG 15s ease infinite;
+    color: #f1f5f9;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  @keyframes gradientBG {
+    0% {background-position: 0% 50%;}
+    50% {background-position: 100% 50%;}
+    100% {background-position: 0% 50%;}
+  }
+
+  nav {
+    background: rgba(30, 18, 23, 0.85);
+    backdrop-filter: blur(10px);
+    padding: 12px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  nav a {
+    color: #ffd6dc;
+    text-decoration: none;
+    font-weight: 600;
+    padding: 8px 14px;
+    border-radius: 8px;
+    transition: background-color 0.3s ease;
+  }
+  nav a:hover, nav a.active {
+    background-color: #db2777;
+    color: white;
+  }
+
+  .header-title {
+    max-width: 900px;
+    margin: 30px auto 20px;
+    padding: 0 10px;
+    text-align: center;
+  }
+  .header-title h1 {
+    margin: 0;
+    font-weight: 900;
+    font-size: 3rem;
+    color: #fef2f2;
+    text-shadow: 0 0 8px #f97316aa, 0 0 12px #db2777bb;
+  }
+  .header-title p {
+    margin: 10px 0 0 0;
+    font-weight: 600;
+    font-size: 1.25rem;
+    color: #fecaca;
+    letter-spacing: 1.2px;
+  }
+
+  main.container {
+    flex: 1;
+    max-width: 900px;
+    margin: 20px auto 60px;
+    padding: 30px 20px;
+    background: rgba(255 255 255 / 0.1);
+    border-radius: 16px;
+    box-shadow: 0 0 14px rgb(219 39 119 / 0.4);
+  }
+
+  main.container h2 {
+    font-weight: 700;
+    font-size: 2rem;
+    color: #fca5a5;
+    margin-bottom: 18px;
+    text-align: center;
+  }
+
+  main.container p {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: #ffd6dc;
+    margin-bottom: 16px;
+  }
+
+  /* Social Icons */
+  .social-icons {
+    text-align: center;
+    margin: 30px 0 40px;
+  }
+  .social-icons a {
+    display: inline-block;
+    margin: 0 12px;
+    color: #fca5a5;
+    font-size: 1.8rem;
+    transition: color 0.3s ease;
+  }
+  .social-icons a:hover {
+    color: #f87171;
+  }
+
+  /* Mailchimp Overrides with refined button and wider, taller form and centered button text */
+  #mc_embed_signup {
+    background: rgba(255 255 255 / 0.1);
+    border-radius: 12px;
+    width: 100% !important;
+    max-width: 700px !important;
+    font-family: 'Montserrat', sans-serif;
+    color: #fee2e2;
+    box-shadow: 0 0 14px rgba(219, 39, 119, 0.4);
+    padding: 50px 40px !important;  /* Increased vertical and horizontal padding */
+    min-height: 420px;              /* Minimum height to ensure taller form */
+    margin: 30px auto !important;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  #mc_embed_signup input.email, 
+  #mc_embed_signup input.text {
+    background: #1e1e2f !important;
+    color: #fca5a5 !important;
+    border-radius: 8px !important;
+    border: none !important;
+    padding: 10px !important;
+    width: 100% !important;
+  }
+  #mc_embed_signup label {
+    color: #fca5a5 !important;
+    font-weight: 600;
+  }
+  #mc_embed_signup input.button {
+    width: 100% !important;
+    max-width: 400px !important;
+    padding: 20px 0 !important;    /* Taller button */
+    font-size: 1.2rem !important;
+    font-weight: 700 !important;
+    border-radius: 12px !important;
+    cursor: pointer;
+    background-color: #db2777 !important;
+    color: #fff !important;
+    letter-spacing: 1px !important;
+    text-transform: uppercase !important;
+    box-shadow: 0 4px 10px rgba(219, 39, 119, 0.6) !important;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease !important;
+    font-family: 'Montserrat', sans-serif !important;
+
+    /* Center text perfectly */
+    display: flex !important;
+    justify-content: center;
+    align-items: center;
+    line-height: 1; /* prevents extra line spacing */
+    text-align: center;
+  }
+  #mc_embed_signup input.button:hover {
+    background-color: #b91c1c !important;
+    box-shadow: 0 6px 14px rgba(185, 28, 28, 0.8) !important;
+  }
+
+  footer {
+    background-color: #240000;
+    color: #fccaca;
+    text-align: center;
+    padding: 20px 16px;
+    font-size: 0.95rem;
+    user-select: none;
+  }
+  footer a {
+    color: #f87171;
+    text-decoration: none;
+    margin: 0 14px;
+    font-weight: 600;
+    transition: color 0.3s ease;
+  }
+  footer a:hover {
+    color: #fca5a5;
+  }
+
+  @media (max-width: 576px) {
+    nav {
+      flex-direction: column;
+      gap: 10px;
+      text-align: center;
+    }
+    .header-title h1 {
+      font-size: 2.2rem;
+    }
+  }
+</style>
+<!-- Font Awesome for social icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+</head>
+<body>
+<nav>
+  <a href="index.html">Home</a>
+  <a href="about.html" class="active">About Us</a>
+  <a href="/login">Login</a>
+</nav>
+
+<div class="header-title" role="banner" aria-label="Page title and tagline">
+  <h1>About Captain Tiwana’s Crew Gallery</h1>
+  <p>Learn more about the channel and the crew behind the videos</p>
+</div>
+
+<main class="container" role="main" aria-describedby="aboutContent">
+  <h2 id="aboutContent">Our Story</h2>
+  <p>
+    Captain Tiwana’s Crew Gallery is the official hub for fans and followers of Captain Tiwana. We curate the best gameplay videos, live streams, and shorts showcasing epic moments, adventures, and collaborations.
+  </p>
+  <p>
+    Our mission is to build a vibrant community where viewers can easily find, watch, and share videos from the Captain Tiwana universe. Whether you're here for the latest uploads or to catch up on recent live streams, this gallery is your digital deck.
+  </p>
+  <p>
+    The crew consists of Captain Tiwana and trusted friends who play, create content, and engage with viewers to bring you entertaining and authentic gaming experiences. Thank you for being part of our journey!
+  </p>
+
+  <h2>Connect with Us</h2>
+  <div class="social-icons" aria-label="Social media links">
+    <a href="https://www.youtube.com/@CaptainTiwana" target="_blank" rel="noopener" aria-label="YouTube"><i class="fab fa-youtube"></i></a>
+    <a href="#" target="_blank" rel="noopener" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+    <a href="#" target="_blank" rel="noopener" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+    <a href="#" target="_blank" rel="noopener" aria-label="Discord"><i class="fab fa-discord"></i></a>
+  </div>
+
+  <h2>Join Our Newsletter</h2>
+  <div id="mc_embed_signup">
+    <form action="https://gmail.us1.list-manage.com/subscribe/post?u=c55c3bd98906d1f7b0c707579&amp;id=7562be0a6c&amp;f_id=00497ae1f0" method="post" id="mc-embedded-subscribe-form" name="mc-embedded-subscribe-form" class="validate" target="_blank" novalidate>
+      <div id="mc_embed_signup_scroll">
+        <div class="indicates-required"><span class="asterisk">*</span> indicates required</div>
+        <div class="mc-field-group">
+          <label for="mce-EMAIL">Email Address <span class="asterisk">*</span></label>
+          <input type="email" name="EMAIL" class="required email" id="mce-EMAIL" required placeholder="you@example.com">
+        </div>
+        <div class="mc-field-group">
+          <label for="mce-FNAME">First Name </label>
+          <input type="text" name="FNAME" class="text" id="mce-FNAME" placeholder="First Name">
+        </div>
+        <div class="mc-field-group">
+          <label for="mce-LNAME">Last Name </label>
+          <input type="text" name="LNAME" class="text" id="mce-LNAME" placeholder="Last Name">
+        </div>
+        <div id="mce-responses" class="clear foot" style="text-align:center;">
+          <div class="response" id="mce-error-response" style="display:none; color:#ff6b6b;"></div>
+          <div class="response" id="mce-success-response" style="display:none; color:#6ee7b7;"></div>
+        </div>
+        <div style="position: absolute; left: -5000px;" aria-hidden="true">
+          <input type="text" name="b_c55c3bd98906d1f7b0c707579_7562be0a6c" tabindex="-1" value="">
+        </div>
+        <div class="clear" style="text-align:center; margin-top:20px;">
+          <input type="submit" value="Subscribe" name="subscribe" id="mc-embedded-subscribe" class="button" />
+        </div>
+      </div>
+    </form>
+  </div>
+  <script src="https://s3.amazonaws.com/downloads.mailchimp.com/js/mc-validate.js"></script>
+  <script>
+    (function($) {
+      window.fnames = new Array();
+      window.ftypes = new Array();
+      fnames[0] = "EMAIL"; ftypes[0] = "email";
+      fnames[1] = "FNAME"; ftypes[1] = "text";
+      fnames[2] = "LNAME"; ftypes[2] = "text";
+    })(jQuery);
+    var $mcj = jQuery.noConflict(true);
+  </script>
+</main>
+
+<footer>
+  <p>
+    © 2025 Captain Tiwana’s Crew Gallery •
+    <a href="https://www.youtube.com/@CaptainTiwana" target="_blank" rel="noopener">
+      YouTube Channel
+    </a>
+  </p>
+</footer>
+</body>
+</html>
