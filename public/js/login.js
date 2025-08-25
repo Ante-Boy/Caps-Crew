@@ -20,8 +20,7 @@ document.getElementById('loginForm').addEventListener('submit', async e => {
     });
 
     if (response.ok) {
-      // On success, redirect to chat.html
-      window.location.href = '/chat.html';
+      window.location.href = '/loading.html';
     } else {
       const data = await response.json();
       errorDiv.textContent = data.error || 'Login failed';

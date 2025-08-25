@@ -25,13 +25,12 @@ app.use(cookieSession({
   maxAge: null // session cookie only
 }));
 
-// Prevent caching so Back button forces fresh request
+// Prevent caching to force fresh request
 app.use((req, res, next) => {
   res.setHeader('Cache-Control', 'no-store');
   next();
 });
 
-// Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
@@ -39,7 +38,6 @@ app.use('/avatars', express.static(path.join(__dirname, 'public/avatars')));
 app.use('/group-icons', express.static(path.join(__dirname, 'public/group-icons')));
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
-// Ensure dirs exist
 if (!fs.existsSync('data')) fs.mkdirSync('data');
 if (!fs.existsSync('public/avatars')) fs.mkdirSync('public/avatars');
 if (!fs.existsSync('public/group-icons')) fs.mkdirSync('public/group-icons');
@@ -59,14 +57,15 @@ const writeUsers = u => fs.writeFileSync(usersFile, JSON.stringify(u, null, 2));
 const readMsgs = () => JSON.parse(fs.readFileSync(messagesFile));
 const writeMsgs = m => fs.writeFileSync(messagesFile, JSON.stringify(m, null, 2));
 
-// AES Encryption (Step 7)
 const AES_KEY = "0123456789abcdef0123456789abcdef";
+
 const encrypt = text => {
   const iv = crypto.randomBytes(16);
   const cipher = crypto.createCipheriv('aes-256-cbc', AES_KEY, iv);
   const encrypted = Buffer.concat([cipher.update(text, 'utf8'), cipher.final()]);
   return iv.toString('hex') + ':' + encrypted.toString('base64');
 };
+
 const decrypt = enc => {
   try {
     const [ivHex, data] = enc.split(':');
@@ -79,23 +78,36 @@ const decrypt = enc => {
   }
 };
 
-// ---------- Routes ----------
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
-app.get('/login', (req, res) => {
-  if (req.session?.username) return res.redirect('/chat.html');
+// Routes
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Redirect /login to /login.html for clarity
+app.get('/login', (req, res) => res.redirect('/login.html'));
+
+app.get('/login.html', (req, res) => {
+  if (req.session?.username) return res.redirect('/loading.html');
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
+
+app.get('/loading.html', (req, res) => {
+  if (!req.session?.username) return res.redirect('/login.html');
+  res.sendFile(path.join(__dirname, 'public', 'loading.html'));
+});
+
 app.get('/chat.html', (req, res) => {
-  if (!req.session?.username) return res.redirect('/login');
+  if (!req.session?.username) return res.redirect('/login.html');
   res.sendFile(path.join(__dirname, 'public', 'chat.html'));
 });
+
 app.get('/admin.html', (req, res) => {
-  if (!req.session?.username) return res.redirect('/login');
+  if (!req.session?.username) return res.redirect('/login.html');
   if (req.session.role !== 'admin') return res.status(403).send('Forbidden');
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
-// Auth
+// Auth endpoints
 app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
   const user = readUsers().find(u => u.username === username);
@@ -106,7 +118,10 @@ app.post('/api/login', async (req, res) => {
   req.session.role = user.role;
   res.json({ message: 'OK', role: user.role });
 });
-app.post('/api/logout', (req, res) => { req.session = null; res.json({ ok: true }); });
+app.post('/api/logout', (req, res) => {
+  req.session = null;
+  res.json({ ok: true });
+});
 
 app.get('/api/session', (req, res) => {
   const me = readUsers().find(u => u.username === req.session?.username);
@@ -117,6 +132,7 @@ app.get('/api/session', (req, res) => {
     avatar: me ? `/avatars/${me.avatar}` : '/avatars/default.png'
   });
 });
+
 app.get('/api/allusers', (req, res) => {
   const users = readUsers();
   const online = Object.keys(onlineUsers);
@@ -129,7 +145,20 @@ app.get('/api/allusers', (req, res) => {
   })));
 });
 
-// File upload (Step 4)
+// Verify PIN endpoint
+app.post('/api/verify-pin', async (req, res) => {
+  const { username, pin } = req.body;
+  if (!username || !pin) return res.status(400).json({ error: 'Missing data' });
+
+  const user = readUsers().find(u => u.username === username);
+  if (!user || !user.pin) return res.status(400).json({ error: 'No PIN set for this user' });
+
+  const isMatch = await bcrypt.compare(pin, user.pin);
+  if (isMatch) return res.json({ message: "OK" });
+  else return res.status(403).json({ error: 'Invalid PIN' });
+});
+
+// File upload endpoint
 app.post('/api/upload', fileUpload.single('file'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file' });
   const filePath = `/uploads/${req.file.filename}`;
@@ -139,7 +168,7 @@ app.post('/api/upload', fileUpload.single('file'), (req, res) => {
   });
 });
 
-// ---------- Socket.IO ----------
+// Socket.IO setup
 let onlineUsers = {};
 io.on('connection', socket => {
   let username = null;

@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Secure Network Connecting...</title>
+
+<!-- Bootstrap CSS -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+<style>
+  html, body {
+    height: 100%;
+    margin: 0; padding: 0;
+    background: #050915;
+    overflow: hidden;
+    font-family: 'Share Tech Mono', monospace;
+    color: #00ffb0;
+  }
+  #matrix {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    z-index: 1;
+    pointer-events: none;
+  }
+  .container {
+    position: relative;
+    z-index: 10;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+  .messages {
+    background: rgba(10,18,15,0.5);
+    border-radius: 20px;
+    padding: 30px 40px;
+    width: min(90vw, 520px);
+    box-shadow: 0 0 40px #00ffb088;
+    font-size: 1.4rem;
+    letter-spacing: 1.5px;
+    min-height: 120px;
+    text-shadow: 0 0 8px #00ffc086, 0 0 3px #0ff;
+    user-select: none;
+    text-align: center;
+  }
+  .progress-container {
+    width: min(90vw, 520px);
+    margin-top: 20px;
+    user-select: none;
+  }
+  .progress-bar {
+    height: 16px;
+    background: #003322;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 0 10px #00ffb044 inset;
+    margin-bottom: 6px;
+  }
+  .progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #00ffb0 20%, #00a870 70%);
+    transition: width 0.3s ease;
+  }
+  .progress-percent {
+    font-family: monospace;
+    font-size: 0.9rem;
+    color: #00ffb0;
+    text-align: right;
+    letter-spacing: 1.4px;
+    text-shadow: 0 0 4px #00ffb0;
+  }
+  .pin-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(5,9,21,0.9);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    z-index: 1050;
+  }
+  .pin-modal.active {
+    display: flex;
+  }
+  .pin-box {
+    background: #010c0a;
+    padding: 36px 36px 24px 36px;
+    border-radius: 18px;
+    border: 2px solid #00ffb0cc;
+    box-shadow: 0 0 22px #00ffb099;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 280px;
+  }
+  .pin-box h2 {
+    margin: 0 0 14px 0;
+    font-size: 1.6rem;
+    letter-spacing: 2px;
+    color: #00ffb0;
+    text-shadow: 0 0 6px #00ffb0;
+  }
+  .pin-box input[type="password"] {
+    background: #04140d;
+    border: none;
+    border-radius: 8px;
+    padding: 14px 20px;
+    font-size: 1.2rem;
+    color: #00ffb0;
+    letter-spacing: 6px;
+    text-align: center;
+    margin-bottom: 18px;
+    outline: none;
+    box-shadow: 0 0 10px #00ffb044 inset;
+    width: 160px;
+    font-family: 'Share Tech Mono', monospace;
+  }
+  .pin-box input[type="password"]:focus {
+    background: #082916;
+    box-shadow: 0 0 18px #00ffb099 inset;
+  }
+  #verifyPinButton {
+    width: 100%;
+    padding: 8px 38px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #003010;
+    cursor: pointer;
+    border-radius: 14px;
+    background: linear-gradient(90deg, #00ffa0 55%, #00ffc0 95%);
+    border: none;
+    box-shadow: 0 0 12px #00ffb022;
+    transition: background 0.3s ease;
+  }
+  #verifyPinButton:hover {
+    background: linear-gradient(90deg, #00ffa0 40%, #04ffa0 100%);
+  }
+  .pin-error {
+    margin-top: 6px;
+    color: #ff4466;
+    font-size: 1rem;
+    min-height: 22px;
+    text-align: center;
+  }
+
+  @media (max-width: 480px) {
+    .messages {
+      font-size: 1rem;
+      padding: 24px 24px;
+      min-height: 90px;
+    }
+    .pin-box {
+      padding: 24px 24px 20px 24px;
+      min-width: 220px;
+    }
+    .pin-box input {
+      width: 120px;
+      padding: 12px 16px;
+      font-size: 1.05rem;
+    }
+  }
+</style>
+<link href="https://fonts.googleapis.com/css?family=Share+Tech+Mono&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+<canvas id="matrix"></canvas>
+
+<div class="container">
+  <div class="messages" id="messages"></div>
+  <div class="progress-container">
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <div class="progress-percent" id="progressPercent">0%</div>
+  </div>
+</div>
+
+<div class="pin-modal" id="pinModal" role="dialog" aria-modal="true" aria-labelledby="pinModalTitle">
+  <div class="pin-box">
+    <h2 id="pinModalTitle">Enter Secure PIN</h2>
+    <input type="password" id="pinInput" maxlength="12" autocomplete="off" spellcheck="false" autofocus required />
+    <button id="verifyPinButton" type="button">Verify</button>
+    <div class="pin-error" id="pinError" role="alert" aria-live="assertive"></div>
+  </div>
+</div>
+
+<script>
+  // Matrix rain effect
+  const canvas = document.getElementById('matrix');
+  const ctx = canvas.getContext('2d');
+  let w = window.innerWidth, h = window.innerHeight;
+  canvas.width = w;
+  canvas.height = h;
+  const fontSize = 16;
+  let columns = Math.floor(w / fontSize);
+  let drops = Array(columns).fill(1);
+
+  function drawMatrix() {
+    ctx.fillStyle = 'rgba(5,14,24,0.18)';
+    ctx.fillRect(0, 0, w, h);
+    ctx.font = `${fontSize + Math.random() * 10}px 'Share Tech Mono', monospace`;
+    for (let i = 0; i < drops.length; i++) {
+      const green = 150 + Math.floor(Math.random() * 105);
+      ctx.fillStyle = `rgba(0, ${green}, 0, 0.8)`;
+      const text = String.fromCharCode(0x30A0 + Math.random() * 96);
+      ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+      if (drops[i] * fontSize > h && Math.random() > 0.975) drops[i] = 0;
+      drops[i]++;
+    }
+  }
+  setInterval(drawMatrix, 45);
+  window.addEventListener('resize', () => {
+    w = window.innerWidth; h = window.innerHeight;
+    canvas.width = w; canvas.height = h;
+    columns = Math.floor(w / fontSize);
+    drops = Array(columns).fill(1);
+  });
+
+  // Loading messages + progress bar
+  const messages = [
+    "Securing network...",
+    "Retrieving encrypted credentials...",
+    "Contacting authentication server...",
+    "Establishing multi-layer handshake...",
+    "Confirming identity...",
+    "Decrypting session data...",
+    "Performing integrity checks...",
+    "Connection established.",
+    "Please enter your secure PIN to proceed."
+  ];
+
+  const msgDiv = document.getElementById('messages');
+  const progressFill = document.getElementById('progressFill');
+  const progressPercent = document.getElementById('progressPercent');
+  let currentMsgIndex = 0;
+
+  function typeMessage(msg, callback) {
+    msgDiv.textContent = '';
+    let i = 0;
+    function typeNext() {
+      msgDiv.textContent = msg.substring(0, i) + (i % 2 === 0 && i !== msg.length ? '_' : ' ');
+      i++;
+      if (i <= msg.length) {
+        setTimeout(typeNext, 30 + Math.random() * 40);
+      } else {
+        setTimeout(callback, 700 + Math.random() * 400);
+      }
+    }
+    typeNext();
+  }
+
+  function showMessagesSequentially() {
+    if (currentMsgIndex >= messages.length) {
+      showPinModal();
+      return;
+    }
+    typeMessage(messages[currentMsgIndex], () => {
+      currentMsgIndex++;
+      const percent = Math.floor(currentMsgIndex / messages.length * 100);
+      updateProgressBar(percent);
+      showMessagesSequentially();
+    });
+  }
+
+  function updateProgressBar(percent) {
+    progressFill.style.width = `${percent}%`;
+    progressPercent.textContent = `${percent}%`;
+  }
+
+  function showPinModal() {
+    document.getElementById('pinModal').classList.add('active');
+    document.getElementById('pinInput').focus();
+  }
+
+  showMessagesSequentially();
+</script>
+
+<script src="js/verifypin.js"></script>
+
+</body>
+</html>

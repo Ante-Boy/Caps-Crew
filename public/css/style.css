@@ -342,3 +342,19 @@ html, body {
   margin-top: 4px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.4);
 }
+.pin-box button#verifyPinButton {
+  background: linear-gradient(90deg, #00ffa0 55%, #00ffc0 95%);
+  border: none;
+  border-radius: 14px;
+  padding: 8px 38px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #003010;
+  cursor: pointer;
+  box-shadow: 0 0 12px #00ffb022;
+  transition: background 0.3s ease;
+}
+
+.pin-box button#verifyPinButton:hover {
+  background: linear-gradient(90deg, #00ffa0 40%, #04ffa0 100%);
+}

@@ -2,6 +2,7 @@
   {
     "username": "admin",
     "passwordHash": "$2b$10$SoztfTY7vHz1o/bYqVazmey.0uEWhszSeM/ZnFB45jlmwKyAYfaXO",
+    "pin":  "$2b$10$SNr.CNHICaZO0u1X0Zx74uUuTbnQ71UM.0fX2RmcNwluDyzbhC9BK",
     "email": "admin@example.com",
     "role": "admin",
     "avatar": "default.png"
@@ -9,6 +10,7 @@
   {
     "username": "user01",
     "passwordHash": "$2b$10$SoztfTY7vHz1o/bYqVazmey.0uEWhszSeM/ZnFB45jlmwKyAYfaXO",
+    "pin":  "$2b$10$SNr.CNHICaZO0u1X0Zx74uUuTbnQ71UM.0fX2RmcNwluDyzbhC9BK",
     "email": "user01@example.com",
     "role": "user",
     "avatar": "default.png"
