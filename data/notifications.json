@@ -1,0 +1,237 @@
+[
+  {
+    "id": "341665f8-d2e9-4a7b-b060-4aafb7b457bf",
+    "userId": "admin",
+    "type": "Login",
+    "message": "Welcome back, admin!",
+    "meta": {
+      "email": "admin@example.com"
+    },
+    "read": true,
+    "timestamp": "2025-08-28T08:40:50.727Z"
+  },
+  {
+    "id": "ec1d8219-73c8-46f8-a313-ece7e0db76a6",
+    "userId": "admin",
+    "type": "Access Granted",
+    "message": "PIN verification successful. Access granted to secure chat.",
+    "meta": {},
+    "read": true,
+    "timestamp": "2025-08-28T08:41:45.056Z"
+  },
+  {
+    "id": "6f6243bc-bbe3-4474-9b9b-7ca3278a676e",
+    "userId": "admin",
+    "type": "Access Granted",
+    "message": "PIN verification successful. Access granted to secure chat.",
+    "meta": {},
+    "read": true,
+    "timestamp": "2025-08-28T08:41:45.145Z"
+  },
+  {
+    "id": "54c96cfa-c8dd-4548-982b-0e7c794d57b4",
+    "userId": "admin",
+    "type": "New Message",
+    "message": "user01 sent you a message",
+    "meta": {
+      "email": "admin@example.com"
+    },
+    "read": true,
+    "timestamp": "2025-08-28T08:43:29.959Z"
+  },
+  {
+    "id": "138d9c90-4604-41b2-ad4f-151978fcc28d",
+    "userId": "admin",
+    "type": "Login",
+    "message": "Welcome back, admin!",
+    "meta": {
+      "email": "admin@example.com"
+    },
+    "read": true,
+    "timestamp": "2025-08-28T09:39:55.488Z"
+  },
+  {
+    "id": "00810feb-22ce-4117-b3a9-6a9d7385591f",
+    "userId": "admin",
+    "type": "Access Granted",
+    "message": "PIN verification successful. Access granted to secure chat.",
+    "meta": {},
+    "read": true,
+    "timestamp": "2025-08-28T09:40:25.027Z"
+  },
+  {
+    "id": "13eea07e-3b2b-436d-9085-516a0dcbcee9",
+    "userId": "admin",
+    "type": "Access Granted",
+    "message": "PIN verification successful. Access granted to secure chat.",
+    "meta": {},
+    "read": true,
+    "timestamp": "2025-08-28T09:40:25.126Z"
+  },
+  {
+    "id": "69a8f82f-dd53-443b-bdfc-4235b96a820b",
+    "userId": "admin",
+    "type": "Logout",
+    "message": "You have been logged out successfully.",
+    "meta": {},
+    "read": true,
+    "timestamp": "2025-08-28T09:40:58.851Z"
+  },
+  {
+    "id": "426106b1-a9db-4095-9e16-24759b5ff608",
+    "userId": "admin",
+    "type": "Login",
+    "message": "Welcome back, admin!",
+    "meta": {
+      "email": "admin@example.com"
+    },
+    "read": true,
+    "timestamp": "2025-08-28T09:41:10.181Z"
+  },
+  {
+    "id": "70a5faae-52f9-4360-bb50-2f8affe674ac",
+    "userId": "admin",
+    "type": "Access Granted",
+    "message": "PIN verification successful. Access granted to secure chat.",
+    "meta": {},
+    "read": true,
+    "timestamp": "2025-08-28T09:41:41.046Z"
+  },
+  {
+    "id": "9bf814e7-8d8f-490e-b037-a477a6dd4271",
+    "userId": "admin",
+    "type": "Logout",
+    "message": "You have been logged out successfully.",
+    "meta": {},
+    "read": true,
+    "timestamp": "2025-08-28T09:41:54.986Z"
+  },
+  {
+    "id": "270f860b-05b0-4ace-ba1d-b4d755b65d1d",
+    "userId": "admin",
+    "type": "Login",
+    "message": "Welcome back, admin!",
+    "meta": {
+      "email": "admin@example.com"
+    },
+    "read": true,
+    "timestamp": "2025-08-28T11:43:31.796Z"
+  },
+  {
+    "id": "6e4fe586-2b65-4266-851d-39e85015d66e",
+    "userId": "admin",
+    "type": "Login",
+    "message": "Welcome back, admin!",
+    "meta": {
+      "email": "admin@example.com"
+    },
+    "read": true,
+    "timestamp": "2025-08-28T11:43:31.825Z"
+  },
+  {
+    "id": "ff1ec492-a916-4608-ae6a-03a60eacb0a0",
+    "userId": "admin",
+    "type": "Access Granted",
+    "message": "PIN verification successful. Access granted to secure chat.",
+    "meta": {},
+    "read": true,
+    "timestamp": "2025-08-28T11:44:02.489Z"
+  },
+  {
+    "id": "78dcc61d-35f5-4bee-af88-11f32322021a",
+    "userId": "admin",
+    "type": "Logout",
+    "message": "You have been logged out successfully.",
+    "meta": {},
+    "read": true,
+    "timestamp": "2025-08-28T11:44:49.451Z"
+  },
+  {
+    "id": "923d972d-0169-442a-b68a-3a1ae406daa6",
+    "userId": "admin",
+    "type": "Login",
+    "message": "Welcome back, admin!",
+    "meta": {
+      "email": "admin@example.com"
+    },
+    "read": true,
+    "timestamp": "2025-08-28T11:45:01.506Z"
+  },
+  {
+    "id": "06fb071f-5160-44ee-960c-2edbb06e9ba2",
+    "userId": "admin",
+    "type": "Access Granted",
+    "message": "PIN verification successful. Access granted to secure chat.",
+    "meta": {},
+    "read": true,
+    "timestamp": "2025-08-28T11:46:09.728Z"
+  },
+  {
+    "id": "38cdd895-2669-487f-8791-e486083e9896",
+    "userId": "user01",
+    "type": "Logout",
+    "message": "You have been logged out successfully.",
+    "meta": {},
+    "read": false,
+    "timestamp": "2025-09-08T11:37:18.684Z"
+  },
+  {
+    "id": "2e32d5ec-2efb-4908-a691-6b7e6fd51560",
+    "userId": "Night-Action041",
+    "type": "NEW_CHAT_MESSAGE",
+    "message": "\n              Notification Code: NEW_CHAT_MESSAGE\n              <br><a href=\"http://localhost:3000\">Go to RAW PROTOCOL</a>\n            ",
+    "meta": {
+      "sendEmail": true,
+      "email": "insangames7@gmail.com"
+    },
+    "read": false,
+    "timestamp": "2025-09-08T14:36:08.607Z"
+  },
+  {
+    "id": "efded905-1861-4e8f-9acf-f34da1e29112",
+    "userId": "Night-Action041",
+    "type": "NEW_CHAT_MESSAGE",
+    "message": "\n              Notification Code: NEW_CHAT_MESSAGE\n              <br><a href=\"http://localhost:3000\">Go to RAW PROTOCOL</a>\n            ",
+    "meta": {
+      "sendEmail": true,
+      "email": "pprabhjot845@gmail.com"
+    },
+    "read": false,
+    "timestamp": "2025-09-08T16:08:47.632Z"
+  },
+  {
+    "id": "b818ecc7-16f2-44f8-a240-9ada6bf01066",
+    "userId": "Night-Action041",
+    "type": "NEW_CHAT_MESSAGE",
+    "message": "\n            Notification Code: NEW_CHAT_MESSAGE\n            <br><a href=\"http://localhost:3000\">Go to RAW PROTOCOL</a>\n          ",
+    "meta": {
+      "sendEmail": true,
+      "email": "pprabhjot845@gmail.com"
+    },
+    "read": false,
+    "timestamp": "2025-09-08T16:10:38.189Z"
+  },
+  {
+    "id": "8fcb8515-3c85-4429-b21e-bfb7acaaf707",
+    "userId": "Night-Action041",
+    "type": "NEW_CHAT_MESSAGE",
+    "message": "hlo",
+    "meta": {
+      "sendEmail": true,
+      "email": "pprabhjot845@gmail.com",
+      "username": "Night-Action041",
+      "toAll": true
+    },
+    "read": false,
+    "timestamp": "2025-09-08T16:54:12.584Z"
+  },
+  {
+    "id": "c22ce770-f20f-4a29-8d4c-cc196a1bbb71",
+    "userId": "Insan001",
+    "type": "Logout",
+    "message": "You have been logged out successfully.",
+    "meta": {},
+    "read": false,
+    "timestamp": "2025-09-09T17:06:58.094Z"
+  }
+]

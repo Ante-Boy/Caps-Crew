@@ -1,127 +1,209 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RAW PROTOCOL - Admin Panel</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RAW PROTOCOL Admin Panel</title>
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    /* Basic dark hacker/neon theme */
+    body {
+      background: #0a0a0a;
+      color: #0ff;
+      font-family: 'Orbitron', monospace, 'Courier New', Courier, monospace;
+    }
+    nav, .card {
+      background-color: #111;
+      border: 2px solid #0ff;
+      box-shadow: 0 0 15px #0ff;
+    }
+    h1,h2,h3,h4 {
+      text-shadow: 0 0 10px #0ff;
+      letter-spacing: 1px;
+    }
+    table thead tr {
+      background-color: #002b2b;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+    table tbody tr:hover {
+      background-color: #003a3a;
+      filter: drop-shadow(0 0 7px #0ff);
+    }
+    .btn-approve {
+      background-color: #0f0;
+      color: black;
+      font-family: 'Orbitron', monospace;
+      font-weight: 700;
+      text-shadow: 0 0 8px #0f0;
+    }
+    .btn-reject {
+      background-color: #f00;
+      color: white;
+      font-family: 'Orbitron', monospace;
+      font-weight: 700;
+      text-shadow: 0 0 8px #f00;
+    }
+    .badge-pending { background: #ffaf00; color: black; }
+    .badge-approved { background: #0f0; color: black; }
+    .badge-rejected { background: #f00; color: white; }
+    .badge-pin { background: #fa0; color: black; }
+    /* Improved label visibility */
+    label.form-label {
+      color: #0ff !important;
+      font-weight: 600;
+    }
+    .form-control, .form-select {
+      background-color: #222;
+      border: 1px solid #0ff;
+      color: #0ff;
+    }
+    .form-control::placeholder {
+      color: #66ffff;
+    }
+    .form-control:focus, .form-select:focus {
+      border-color: #0ff;
+      box-shadow: 0 0 12px #0ff;
+      background-color: #002a2a;
+      color: #fff;
+    }
+    .btn-primary:hover, .btn-success:hover {
+      filter: brightness(120%);
+      box-shadow: 0 0 12px #0ff;
+    }
+    .modal-content {
+      background-color: #111;
+      border: 2px solid #0ff;
+      box-shadow: 0 0 15px #0ff;
+      color: #0ff;
+      font-family: 'Orbitron', monospace;
+    }
+    .btn-close {
+      filter: invert(1);
+    }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron&display=swap" rel="stylesheet" />
 </head>
-<body class="bg-dark text-light">
-<canvas id="matrixCanvas"></canvas>
-<nav class="navbar navbar-dark bg-dark sticky-top px-3">
-  <span class="navbar-brand">Admin Panel</span>
-  <button class="btn btn-outline-light btn-sm" onclick="location.href='/chat.html'">Back to Chat</button>
+<body>
+<nav class="navbar navbar-dark sticky-top">
+  <div class="container-fluid d-flex justify-content-between">
+    <span class="navbar-brand fs-3">RAW PROTOCOL Admin Panel</span>
+    <button class="btn btn-outline-light btn-sm" onclick="location.href='/chat.html'">Back to Chat</button>
+  </div>
 </nav>
-<div class="container py-4">
-  <!-- Group Chat Settings -->
-  <div class="card bg-secondary text-light mb-4">
-    <div class="card-header">Group Chat Settings</div>
-    <div class="card-body">
-      <form id="groupSettingsForm">
-        <div class="mb-3">
-          <label class="form-label">Group Name</label>
-          <input type="text" id="groupNameInput" class="form-control" value="RAW PROTOCOL" required>
+<main class="container py-4">
+  <section class="mb-4">
+    <div class="card p-3">
+      <h4>Group Chat Settings</h4>
+      <form id="groupSettingsForm" enctype="multipart/form-data" class="row gy-3">
+        <div class="col-md-6">
+          <label for="groupNameInput" class="form-label">Group Name</label>
+          <input type="text" id="groupNameInput" class="form-control" required />
         </div>
-        <div class="mb-3">
-          <label class="form-label">Group Icon</label>
-          <input type="file" id="groupIconFile" class="form-control" accept="image/*">
+        <div class="col-md-6">
+          <label for="groupIconFile" class="form-label">Group Icon</label>
+          <input type="file" id="groupIconFile" class="form-control" accept="image/*" />
         </div>
-        <button type="submit" class="btn btn-primary">Update Group</button>
-        <div id="groupSettingsMsg" class="small mt-2"></div>
+        <div class="col-12">
+          <button type="submit" class="btn btn-primary">Update Group</button>
+          <small id="groupSettingsMsg" class="form-text mt-2"></small>
+        </div>
       </form>
     </div>
-  </div>
-  <!-- Create New User -->
-  <div class="card bg-secondary text-light mb-4">
-    <div class="card-header">Create New User</div>
-    <div class="card-body">
-      <form id="createUserForm" autocomplete="off">
-        <div class="mb-2">
-          <label class="form-label">Username</label>
-          <input type="text" name="username" class="form-control" required>
+  </section>
+  <section class="mb-4">
+    <div class="card p-3">
+      <h4>Create New User</h4>
+      <form id="createUserForm" autocomplete="off" class="row g-3 align-items-center">
+        <input type="text" class="form-control col-md-3" id="newUserUsername" placeholder="Username" required />
+        <input type="email" class="form-control col-md-3" id="newUserEmail" placeholder="Email" required />
+        <input type="password" class="form-control col-md-3" id="newUserPassword" placeholder="Password" required />
+        <input type="password" class="form-control col-md-3" id="newUserPin" placeholder="PIN (optional)" />
+        <select class="form-select col-md-3" id="newUserRole" required>
+          <option value="pending" selected>Pending</option>
+          <option value="user">User</option>
+          <option value="admin">Admin</option>
+        </select>
+        <div class="form-check col-md-3 text-end">
+          <input type="checkbox" class="form-check-input" id="newUserEmailNotif" checked />
+          <label class="form-check-label" for="newUserEmailNotif">Email Notifications</label>
         </div>
-        <div class="mb-2">
-          <label class="form-label">Email</label>
-          <input type="email" name="email" class="form-control" required>
+        <div class="col-12">
+          <button type="submit" class="btn btn-success">Create User</button>
+          <small id="createUserMsg" class="form-text mt-2"></small>
         </div>
-        <div class="mb-2">
-          <label class="form-label">Password</label>
-          <input type="password" name="password" class="form-control" required>
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Role</label>
-          <select name="role" class="form-select">
-            <option value="user" selected>User</option>
-            <option value="admin">Admin</option>
-          </select>
-        </div>
-        <button type="submit" class="btn btn-success">Create User</button>
-        <div id="createUserMsg" class="mt-2 small"></div>
       </form>
     </div>
-  </div>
-  <!-- Users Table -->
-  <div class="card bg-secondary text-light">
-    <div class="card-header">Existing Users</div>
-    <div class="card-body p-0">
+  </section>
+  <section>
+    <div class="card p-3">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4>Users</h4>
+        <div class="d-flex gap-2">
+          <button id="clearChatBtn" class="btn btn-danger btn-sm">Clear Chat History</button>
+        </div>
+      </div>
       <div class="table-responsive">
-        <table class="table table-dark table-striped mb-0">
+        <table class="table table-striped table-dark">
           <thead>
             <tr>
-              <th>Username</th>
-              <th>Email</th>
-              <th>Role</th>
-              <th></th>
+              <th>Username</th><th>Email</th><th>Role</th><th>Status</th><th>Email Notifications</th><th>PIN Set</th><th>Actions</th>
             </tr>
           </thead>
-          <tbody id="adminUsers">
-            <!-- Populated via JS -->
-          </tbody>
+          <tbody id="adminUsers"></tbody>
         </table>
       </div>
     </div>
+  </section>
+  <!-- Edit Modal -->
+  <div class="modal fade" id="editUserModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <form class="modal-content" id="editUserForm">
+        <div class="modal-header">
+          <h5 class="modal-title">Edit User</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="edit-originalUsername" name="originalUsername" />
+          <div class="mb-3">
+            <label class="form-label">Username</label>
+            <input type="text" id="editUsername" name="username" class="form-control" required />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Email</label>
+            <input type="email" id="editEmail" name="email" class="form-control" required />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">New Password (leave blank = no change)</label>
+            <input type="password" id="editPassword" name="password" class="form-control" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">New PIN (leave blank to keep current)</label>
+            <input type="password" id="editPin" name="pin" class="form-control" autocomplete="new-password" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Role</label>
+            <select id="editRole" name="role" class="form-select">
+              <option value="pending">Pending</option>
+              <option value="user">User</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <div class="form-check mb-3">
+            <input type="checkbox" id="editEmailNotif" name="emailNotifications" class="form-check-input" />
+            <label class="form-check-label" for="editEmailNotif">Email Notifications</label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        </div>
+      </form>
+    </div>
   </div>
-</div>
-<!-- Edit User Modal -->
-<div class="modal fade" id="editUserModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
-    <form class="modal-content" id="editUserForm">
-      <div class="modal-header">
-        <h5 class="modal-title">Edit User</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <input type="hidden" name="originalUsername" id="edit-originalUsername">
-        <div class="mb-2">
-          <label class="form-label">Username</label>
-          <input type="text" name="username" id="edit-username" class="form-control">
-        </div>
-        <div class="mb-2">
-          <label class="form-label">Email</label>
-          <input type="email" name="email" id="edit-email" class="form-control">
-        </div>
-        <div class="mb-2">
-          <label class="form-label">New Password (leave blank to keep same)</label>
-          <input type="password" name="password" class="form-control">
-        </div>
-        <div class="mb-2">
-          <label class="form-label">Role</label>
-          <select name="role" id="edit-role" class="form-select">
-            <option value="user">User</option>
-            <option value="admin">Admin</option>
-          </select>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-primary" type="submit">Save Changes</button>
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-      </div>
-    </form>
-  </div>
-</div>
+</main>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<script src="js/matrix.js"></script>
 <script src="js/admin.js"></script>
 </body>
 </html>

@@ -1,39 +1,53 @@
+<!-- cpf.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>RAW PROTOCOL Chat</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"/>
 </head>
 <body class="bg-dark text-light">
   <canvas id="matrixCanvas"></canvas>
-
   <!-- Navbar -->
   <nav class="navbar navbar-dark glass-dark sticky-top px-3">
-    <button class="btn btn-outline-light d-md-none me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#userSidebar">☰ Users</button>
+    <button class="btn btn-outline-light d-md-none me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#userSidebar">☰</button>
     <span class="navbar-brand mb-0 h1 d-flex align-items-center">
-      <img id="groupIcon" src="/group-icons/default-group.png" class="rounded-circle me-2" style="width:32px;height:32px;">
+      <img id="groupIcon" src="/group-icons/default-group.png" class="rounded-circle me-2" style="width:32px;height:32px;"/>
       <span id="groupNameSpan">RAW PROTOCOL</span>
     </span>
-    <div class="ms-auto">
-      <button id="adminPanelBtn" class="btn btn-outline-light btn-sm me-1" style="display:none;">Admin</button>
-      <button class="btn btn-outline-light btn-sm me-1" onclick="openSettings()">👤</button>
+    <div class="ms-auto d-flex align-items-center">
+      <div class="notification-system me-3 position-relative">
+        <div id="notificationBell" class="notification-bell" tabindex="0" role="button">
+          <i class="fas fa-bell"></i>
+          <span id="notificationCount" class="notification-count">0</span>
+        </div>
+        <div id="notificationPanel" class="notification-panel">
+          <div class="d-flex justify-content-between align-items-center p-2 border-bottom">
+            <h6 class="m-0 text-info">Notifications</h6>
+            <div>
+              <button id="markAllRead" class="btn btn-sm btn-outline-success me-1">Mark All</button>
+              <button id="deleteAllNotifications" class="btn btn-sm btn-outline-danger">Delete All</button>
+            </div>
+          </div>
+          <div id="notificationList" class="notification-list p-2 text-light" style="max-height:400px; overflow-y:auto;">
+            <div class="text-muted text-center">No notifications</div>
+          </div>
+        </div>
+      </div>
+      <button id="adminPanelBtn" class="btn btn-outline-light btn-sm me-2" style="display:none">Admin</button>
+      <button class="btn btn-outline-light btn-sm me-2" onclick="openSettings()">👤</button>
       <button class="btn btn-outline-danger btn-sm" onclick="logout()">Logout</button>
     </div>
   </nav>
-
-  <!-- Layout -->
-  <div class="container-fluid">
-    <div class="row vh-100">
-      <!-- Desktop Sidebar -->
-      <aside class="col-md-3 col-lg-2 d-none d-md-block glass-dark p-0">
+  <div class="container-fluid h-100">
+    <div class="row h-100">
+      <aside class="col-lg-2 d-none d-lg-block glass-dark p-0 overflow-auto" style="height: 100vh;">
         <div id="onlineUsers" class="list-group list-group-flush"></div>
       </aside>
-
-      <!-- Mobile Offcanvas Sidebar -->
-      <div class="offcanvas offcanvas-start glass-dark text-light" tabindex="-1" id="userSidebar">
+      <div class="offcanvas offcanvas-start glass-dark text-light" id="userSidebar" tabindex="-1">
         <div class="offcanvas-header">
           <h5 class="offcanvas-title">Users</h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
@@ -42,22 +56,22 @@
           <div id="onlineUsersMobile" class="list-group list-group-flush"></div>
         </div>
       </div>
+      <main class="col-lg-10 d-flex flex-column glass p-0">
+        <div id="chat" class="flex-grow-1 overflow-auto p-3 message-container"></div>
 
-      <!-- Chat Main -->
-      <main class="col-md-9 col-lg-10 d-flex flex-column glass p-0">
-        <div id="chat" class="flex-fill overflow-auto p-3 message-container"></div>
-        <!-- Chat Form -->
-        <form id="chatForm" class="d-flex border-top p-2 glass" autocomplete="off">
-          <input type="file" id="fileInput" hidden>
-          <button type="button" class="btn btn-outline-light me-2" onclick="document.getElementById('fileInput').click()">📎</button>
-          <input type="text" id="messageInput" class="form-control me-2" placeholder="Type your message..." required>
-          <button class="btn btn-success">Send</button>
+        <!-- Chat Lock Banner -->
+        <div id="chatLockBanner" style="display:none; margin: 5px 10px; border-radius: 4px;"></div>
+
+        <form id="chatForm" class="d-flex gap-2 p-2 border-top glass" autocomplete="off">
+          <input type="file" id="fileInput" hidden/>
+          <button type="button" class="btn btn-outline-light" title="Attach file" onclick="document.getElementById('fileInput').click()">📎</button>
+          <input type="text" id="messageInput" class="form-control" placeholder="Type your message..." required/>
+          <button type="submit" class="btn btn-success px-4">Send</button>
         </form>
       </main>
     </div>
   </div>
-
-  <!-- Settings Modal -->
+  <!-- User Settings Modal -->
   <div class="modal fade" id="userSettingsModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
       <form class="modal-content" onsubmit="saveSettings(); return false;">
@@ -66,216 +80,33 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
-          <div class="mb-3 text-center">
-            <img id="current-avatar" class="rounded-circle mb-2" src="/avatars/default.png" style="width:64px;height:64px;">
-            <input type="file" id="new-avatar-file" class="form-control form-control-sm" accept="image/*">
+          <div class="text-center mb-3">
+            <img id="current-avatar" src="/avatars/default.png" class="rounded-circle" style="width:64px;height:64px;"/>
+            <input type="file" id="new-avatar-file" class="form-control form-control-sm mt-2" accept="image/*"/>
           </div>
-          <input id="settings-username" class="form-control mb-2" placeholder="Username">
-          <input id="settings-email" class="form-control mb-2" placeholder="Email">
-          <input type="password" id="settings-oldpass" class="form-control mb-2" placeholder="Old Password">
-          <input type="password" id="settings-newpass" class="form-control mb-2" placeholder="New Password">
+          <input id="settings-username" class="form-control mb-2" placeholder="Username" required/>
+          <input id="settings-email" type="email" class="form-control mb-2" placeholder="Email"/>
+          <input id="settings-oldpin" type="password" class="form-control mb-2" placeholder="Old PIN"/>
+          <input id="settings-newpin" type="password" class="form-control mb-2" placeholder="New PIN"/>
+          <input id="settings-oldpass" type="password" class="form-control mb-2" placeholder="Old Password"/>
+          <input id="settings-newpass" type="password" class="form-control mb-2" placeholder="New Password"/>
           <div id="settings-msg" class="text-danger small"></div>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-primary" type="submit">Save</button>
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="submit" class="btn btn-primary px-4">Save</button>
+          <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Close</button>
         </div>
       </form>
     </div>
   </div>
-
-  <!-- Context Menu -->
+  <!-- Context menu -->
   <div id="context-menu" class="context-menu"></div>
-
-  <!-- Scripts -->
+  <!-- Toast container -->
+  <div id="toastContainer" class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1080;"></div>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script src="/socket.io/socket.io.js"></script>
   <script src="js/matrix.js"></script>
-  <script>
-    const socket = io();
-    let myName = null, currentTarget = "all", allMessages = [],
-        onlineUserList = [], onlineUserMap = {}, allRegisteredUsers = [];
-    let groupName = "RAW PROTOCOL", groupIcon = "/group-icons/default-group.png", myRole = "user";
-
-    (async () => {
-      const session = await (await fetch('/api/session')).json();
-      if (!session.username) return location.href='/';
-      myName = session.username; myRole = session.role;
-      if (myRole === 'admin') {
-        const adminBtn = document.getElementById('adminPanelBtn');
-        adminBtn.style.display = '';
-        adminBtn.onclick = () => { window.location.href = '/admin.html'; };
-      }
-      allRegisteredUsers = await (await fetch('/api/allusers')).json();
-      socket.emit('join', myName);
-      renderUserList();
-    })();
-
-    function logout(){ fetch('/api/logout',{method:'POST'}).then(()=>location.href='/'); }
-    function openSettings(){
-      fetch('/api/session').then(r=>r.json()).then(d=>{
-        document.getElementById('settings-username').value=d.username;
-        document.getElementById('settings-email').value=d.email;
-        document.getElementById('current-avatar').src=d.avatar;
-        new bootstrap.Modal(document.getElementById('userSettingsModal')).show();
-      });
-    }
-    async function saveSettings(){
-      const fd=new FormData();
-      fd.append('username',document.getElementById('settings-username').value);
-      fd.append('email',document.getElementById('settings-email').value);
-      fd.append('oldpass',document.getElementById('settings-oldpass').value);
-      fd.append('newpass',document.getElementById('settings-newpass').value);
-      const a=document.getElementById('new-avatar-file').files[0];
-      if(a) fd.append('avatar',a);
-      const res=await fetch('/api/users/me',{method:'PUT',body:fd});
-      const data=await res.json();
-      document.getElementById('settings-msg').textContent=data.message||data.error;
-      if(res.ok){
-        fetch('/api/session').then(r=>r.json()).then(sess=>{
-          document.getElementById('current-avatar').src=sess.avatar;
-          onlineUserMap[sess.username]=sess.avatar;
-          renderUserList();
-        });
-      }
-    }
-
-    // File upload handler
-    document.getElementById('fileInput').addEventListener('change',async e=>{
-      const file=e.target.files[0];
-      if(!file) return;
-      const fd=new FormData();
-      fd.append('file',file);
-      const res=await fetch('/api/upload',{method:'POST',body:fd});
-      const data=await res.json();
-      socket.emit('fileMessage',{to:currentTarget,filePath:data.filePath,filename:data.filename});
-      e.target.value='';
-    });
-
-    function renderUserList(){
-      const containers=[document.getElementById('onlineUsers'),document.getElementById('onlineUsersMobile')];
-      containers.forEach(c=>c.innerHTML='');
-      addUser({username:'all',avatar:groupIcon,role:null,online:true},groupName,true);
-      allRegisteredUsers.forEach(u=>{if(u.username!==myName) addUser(u,u.username,u.online);});
-    }
-
-    function addUser(userObj,label,isOnline){
-      [document.getElementById('onlineUsers'),document.getElementById('onlineUsersMobile')].forEach(container=>{
-        const div=document.createElement('div');
-        div.className='list-group-item d-flex align-items-center';
-        if(currentTarget===userObj.username) div.classList.add('active');
-        const av=document.createElement('img');
-        av.className='rounded-circle me-2';
-        av.src=userObj.avatar||'/avatars/default.png';
-        av.style.width='32px'; av.style.height='32px';
-        const nameWrap=document.createElement('div'); nameWrap.textContent=label;
-        const statusWrap=document.createElement('span'); statusWrap.className='ms-auto';
-        const dot=document.createElement('span'); dot.className=`user-status-dot ${isOnline?'online':'offline'}`;
-        statusWrap.append(dot);
-        if(userObj.role==='admin'){const badge=document.createElement('span'); badge.className='badge bg-warning text-dark ms-2'; badge.textContent='Admin'; statusWrap.append(badge);}
-        div.append(av,nameWrap,statusWrap);
-        div.onclick=()=>{ currentTarget=userObj.username;
-          if(currentTarget==='all') document.getElementById('groupNameSpan').textContent=groupName;
-          else document.getElementById('groupNameSpan').textContent=`${userObj.username} ${isOnline?'●online':'●offline'}`;
-          renderUserList(); renderMessages();
-        };
-        container.appendChild(div);
-      });
-    }
-
-    function renderMessages(){
-      const chatDiv=document.getElementById('chat');
-      chatDiv.innerHTML='';
-      const msgs=currentTarget==='all'
-        ? allMessages.filter(m=>m.to==='all')
-        : allMessages.filter(m=>(m.from===myName&&m.to===currentTarget)||(m.to===myName&&m.from===currentTarget));
-      msgs.forEach(m=>{
-        socket.emit('seen',m.id);
-        const wrap=document.createElement('div'); wrap.dataset.id=m.id;
-        wrap.style.display='flex'; wrap.style.alignItems='flex-end'; wrap.style.marginBottom='10px';
-        const isMe=m.from===myName;
-        const bub=document.createElement('div'); bub.className='msg-bubble '+(isMe?'from-me':'from-them');
-
-        if(m.type==='file'){
-          const fname=(m.originalName||"").toLowerCase();
-          if(fname.match(/\.(jpg|jpeg|png|gif)$/i)){
-            const img=document.createElement('img'); img.src=m.text; img.className='chat-image'; bub.appendChild(img);
-            const link=document.createElement('a'); link.href=m.text; link.textContent=m.originalName||'Download Image'; link.download=link.textContent; link.style.display="block"; link.style.marginTop="5px"; bub.appendChild(link);
-          }
-          else if(fname.match(/\.(mp4|webm|ogg)$/i)){
-            const video=document.createElement('video'); video.src=m.text; video.controls=true; video.className='chat-video'; bub.appendChild(video);
-            const link=document.createElement('a'); link.href=m.text; link.textContent=m.originalName||'Download Video'; link.download=link.textContent; link.style.display="block"; link.style.marginTop="5px"; bub.appendChild(link);
-          }
-          else{
-            const link=document.createElement('a'); link.href=m.text; link.textContent=m.originalName||'Download File'; link.download=link.textContent; bub.appendChild(link);
-          }
-        } else {
-          bub.textContent=m.text;
-        }
-
-        bub.oncontextmenu=e=>{e.preventDefault();showContextMenu(e.pageX,e.pageY,m.id);};
-        if(isMe){ wrap.style.justifyContent='flex-end'; wrap.append(bub);}
-        else{ wrap.style.justifyContent='flex-start'; wrap.append(bub);}
-        chatDiv.appendChild(wrap);
-      });
-      chatDiv.scrollTop=chatDiv.scrollHeight;
-    }
-
-    function showContextMenu(x,y,id){
-      closeMenu();
-      const menu=document.getElementById('context-menu');
-      menu.style.left=x+'px'; menu.style.top=y+'px';
-      let m=allMessages.find(m2=>m2.id===id);
-      let btns=`<button onclick="socket.emit('save','${id}');closeMenu()">💾 Save</button>`;
-      if(myRole==='admin'||(m&&m.from===myName)){
-        btns+=`<button onclick="socket.emit('delete','${id}');closeMenu()">🗑 Delete for everyone</button>`;
-      } else {
-        btns+=`<button onclick="deleteJustForMe('${id}');closeMenu()">🗑 Delete for me</button>`;
-      }
-      btns+=`<button onclick="closeMenu()">Cancel</button>`;
-      menu.innerHTML=btns; menu.style.display='block';
-    }
-
-    function deleteJustForMe(id){
-      const msgWrap=document.querySelector(`[data-id="${id}"]`);
-      if(msgWrap){
-        msgWrap.classList.add('fade-out');
-        setTimeout(()=>{allMessages=allMessages.filter(m=>m.id!==id); renderMessages();},350);
-      }else{
-        allMessages=allMessages.filter(m=>m.id!==id);
-        renderMessages();
-      }
-    }
-    function closeMenu(){document.getElementById('context-menu').style.display='none';}
-
-    socket.on('online',data=>{
-      onlineUserList=data.list; groupName=data.groupName; groupIcon=data.groupIcon;
-      document.getElementById('groupIcon').src=groupIcon;
-      onlineUserMap={}; data.list.forEach(u=>{onlineUserMap[u.username]=u.avatar;});
-      allRegisteredUsers=allRegisteredUsers.map(u=>({...u,online:onlineUserList.some(ou=>ou.username===u.username)}));
-      renderUserList();
-    });
-    socket.on('history',msgs=>{allMessages=msgs;renderMessages();});
-    socket.on('message',msg=>{allMessages.push(msg);renderMessages();});
-    socket.on('deleteMessage',msgId=>{
-      const msgWrap=document.querySelector(`[data-id="${msgId}"]`);
-      if(msgWrap){
-        msgWrap.classList.add('fade-out');
-        setTimeout(()=>{allMessages=allMessages.filter(m=>m.id!==msgId); renderMessages();},350);
-      }else{
-        allMessages=allMessages.filter(m=>m.id!==msgId);
-        renderMessages();
-      }
-    });
-
-    document.getElementById('chatForm').addEventListener('submit',e=>{
-      e.preventDefault();
-      const t=document.getElementById('messageInput').value.trim();
-      if(!t) return;
-      socket.emit('send',{to:currentTarget,text:t});
-      document.getElementById('messageInput').value='';
-    });
-    document.body.addEventListener('click',closeMenu);
-  </script>
+  <script src="js/notifications.js"></script>
+  <script src="js/main.js"></script>
 </body>
 </html>

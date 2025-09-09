@@ -1,18 +1,24 @@
 [
   {
-    "username": "admin",
-    "passwordHash": "$2b$10$SoztfTY7vHz1o/bYqVazmey.0uEWhszSeM/ZnFB45jlmwKyAYfaXO",
-    "pin":  "$2b$10$SNr.CNHICaZO0u1X0Zx74uUuTbnQ71UM.0fX2RmcNwluDyzbhC9BK",
-    "email": "admin@example.com",
+    "username": "CREATER",
+    "passwordHash": "$2b$10$E1wAj2liPXZX1WPGd5jvrOJbyAu5R2eDP2szNxZvq3f74fqiR8qYK",
+    "pin": "$2b$10$Ova/CUfTc3ppTKJSDuk7tOuyPa4mzEc2V4PEpgiBstRK4zjSB18Gi",
+    "email": "tiwanacaptain@gmail.com",
     "role": "admin",
-    "avatar": "default.png"
+    "avatar": "default.png",
+    "locked": false,
+    "emailNotifications": false,
+    "status": "approved"
   },
   {
-    "username": "user01",
-    "passwordHash": "$2b$10$SoztfTY7vHz1o/bYqVazmey.0uEWhszSeM/ZnFB45jlmwKyAYfaXO",
-    "pin":  "$2b$10$SNr.CNHICaZO0u1X0Zx74uUuTbnQ71UM.0fX2RmcNwluDyzbhC9BK",
-    "email": "user01@example.com",
+    "username": "Captain01",
+    "email": "manjindersinghqqq62@gmail.com",
+    "passwordHash": "$2b$10$eint6dFHCzzDamGCBOw9ruieRAT5vcvr7HWgdZguK6IKryaSjdVzi",
+    "pin": "$2b$10$/O8LE2Kf6dlBBcB.B5AnyeN4loID3H/xYaoFxhDZg/ZOvPnb8cTty",
     "role": "user",
-    "avatar": "default.png"
+    "emailNotifications": true,
+    "avatar": "default.png",
+    "locked": false,
+    "status": "approved"
   }
 ]
