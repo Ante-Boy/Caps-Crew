@@ -162,7 +162,8 @@ const createNotification = async (userId, type, message, meta = {}) => {
     }
 
     // Send email if enabled
-    if (meta.sendEmail && meta.email) {
+if (false && meta.sendEmail && meta.email) {
+
       const username = meta.username || userId || 'Member';
       const toAll = meta.toAll || false;
 
