@@ -20,5 +20,16 @@
     "avatar": "default.png",
     "locked": false,
     "status": "approved"
+  },
+  {
+    "username": "Insan",
+    "email": "insangames7@gmail.com",
+    "passwordHash": "$2b$10$Szthbr1K5f9401NpeZuxu.3sqJ5QFrBtkmxxL19vqHN47LfVMYhcy",
+    "pin": null,
+    "role": "user",
+    "avatar": "default.png",
+    "locked": false,
+    "emailNotifications": true,
+    "status": "pending"
   }
 ]
